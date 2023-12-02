@@ -25,6 +25,7 @@ for line in lines:
 
 print('ANSWER Part A -> ', answer_a)
 
+######################################################
 
 answer_b = 0
 spelled = {
