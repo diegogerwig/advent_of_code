@@ -9,23 +9,31 @@ from string import digits
 with open("inp.txt") as f:
     lines = f.read().split("\n")
 
+#########################
+###      PART A      ####
+#########################
+
 answer_a = 0
 
 for line in lines:
-    tmp = ""
-    for i in line:
-        if i in digits:
-            tmp += i
-            break
-    for i in line[::-1]:
-        if i in digits:
-            tmp += i
-            break
-    answer_a += int(tmp)
+    numbers = []
+    
+    for digit in digits:
+        idx = line.find(digit)
+        if idx != -1:
+            numbers.append((idx, digit))
+        idx = line.rfind(digit)
+        if idx != -1:
+            numbers.append((idx, digit))
+
+    numbers.sort()
+    answer_a += int(f"{numbers[0][1]}{numbers[-1][1]}")
 
 print('ANSWER Part A -> ', answer_a)
 
-######################################################
+#########################
+###      PART B      ####
+#########################
 
 answer_b = 0
 spelled = {
@@ -42,21 +50,21 @@ spelled = {
 
 for line in lines:
     numbers = []
-    for d in digits:
-        idx = line.find(d)
+    for word, digit in spelled.items():
+        idx = line.find(word)
         if idx != -1:
-            numbers.append((idx, d))
-        idx = line.rfind(d)
+            numbers.append((idx, digit))
+        idx = line.rfind(word)
         if idx != -1:
-            numbers.append((idx, d))
-    for d, v in spelled.items():
-        idx = line.find(d)
+            numbers.append((idx, digit))
+    for digit in digits:
+        idx = line.find(digit)
         if idx != -1:
-            numbers.append((idx, v))
-        idx = line.rfind(d)
+            numbers.append((idx, digit))
+        idx = line.rfind(digit)
         if idx != -1:
-            numbers.append((idx, v))
-
+            numbers.append((idx, digit))
+   
     numbers.sort()
     answer_b += int(f"{numbers[0][1]}{numbers[-1][1]}")
 
