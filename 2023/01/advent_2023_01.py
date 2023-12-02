@@ -1,9 +1,32 @@
 from string import digits
 
+# with open("inp_test_a.txt") as f:
+#     lines = f.read().split("\n")
+
+# with open("inp_test_b.txt") as f:
+#     lines = f.read().split("\n")
+
 with open("inp.txt") as f:
     lines = f.read().split("\n")
 
-ans = 0
+answer_a = 0
+
+for line in lines:
+    tmp = ""
+    for i in line:
+        if i in digits:
+            tmp += i
+            break
+    for i in line[::-1]:
+        if i in digits:
+            tmp += i
+            break
+    answer_a += int(tmp)
+
+print('ANSWER Part A -> ', answer_a)
+
+
+answer_b = 0
 spelled = {
     "one": "1",
     "two": "2",
@@ -34,6 +57,6 @@ for line in lines:
             numbers.append((idx, v))
 
     numbers.sort()
-    ans += int(f"{numbers[0][1]}{numbers[-1][1]}")
+    answer_b += int(f"{numbers[0][1]}{numbers[-1][1]}")
 
-print(ans)
+print('ANSWER Part B -> ', answer_b)
