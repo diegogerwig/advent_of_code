@@ -1,6 +1,6 @@
 from string import digits
 
-with open("inp.txt") as f:
+with open("inp_a.txt") as f:
     lines = f.read().split("\n")
 
 ans = 0
