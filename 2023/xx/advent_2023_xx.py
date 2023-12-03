@@ -15,7 +15,7 @@ with open("inp.txt") as f:
 ###      PART A      ####
 #########################
 
-
+   
 
 print('ANSWER Part A -> ', )
 
