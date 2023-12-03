@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from collections import defaultdict
 
 # with open("inp_test_a.txt") as f:
@@ -8,6 +10,11 @@ from collections import defaultdict
 
 with open("inp.txt") as f:
     lines = f.read().split('\n')
+
+
+#########################
+###      PART A      ####
+#########################
 
 answer_a = 0
 bads = set()
@@ -31,7 +38,10 @@ for line in lines:
 
 print('ANSWER Part A -> ', answer_a - sum(bads))
 
-######################################################
+
+#########################
+###      PART B     ####
+#########################
 
 answer_b = 0
 for line in lines:

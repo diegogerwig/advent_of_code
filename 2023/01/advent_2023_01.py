@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from string import digits
 
 # with open("inp_test_a.txt") as f:
@@ -8,6 +10,7 @@ from string import digits
 
 with open("inp.txt") as f:
     lines = f.read().split("\n")
+
 
 #########################
 ###      PART A      ####
@@ -30,6 +33,7 @@ for line in lines:
     answer_a += int(f"{numbers[0][1]}{numbers[-1][1]}")
 
 print('ANSWER Part A -> ', answer_a)
+
 
 #########################
 ###      PART B      ####
