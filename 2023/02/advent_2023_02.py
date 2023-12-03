@@ -17,26 +17,26 @@ with open("inp.txt") as f:
 #########################
 
 answer_a = 0
-bads = set()
+game_wrong = set()
 
 for line in lines:
-    gn, rounds = line.split(':')
-    gid = int(gn[5:])
+    game_num, rounds = line.split(':')
+    game_id = int(game_num[5:])
 
-    answer_a += gid
+    answer_a += game_id
 
     rounds = rounds.split(';')
     for round in rounds:
         round = [r.strip().split() for r in round.split(',')]
         for k, color in round:
             if color == 'red' and int(k) > 12:
-                bads.add(gid)
+                game_wrong.add(game_id)
             if color == 'green' and int(k) > 13:
-                bads.add(gid)
+                game_wrong.add(game_id)
             if color == 'blue' and int(k) > 14:
-                bads.add(gid)
+                game_wrong.add(game_id)
 
-print('ANSWER Part A -> ', answer_a - sum(bads))
+print('ANSWER Part A -> ', answer_a - sum(game_wrong))
 
 
 #########################
@@ -44,9 +44,10 @@ print('ANSWER Part A -> ', answer_a - sum(bads))
 #########################
 
 answer_b = 0
+
 for line in lines:
-    gn, rounds = line.split(':')
-    gid = int(gn[5:])
+    game_num, rounds = line.split(':')
+    game_id = int(game_num[5:])
 
     rounds = rounds.split(';')
 
