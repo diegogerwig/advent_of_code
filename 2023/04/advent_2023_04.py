@@ -4,7 +4,7 @@ import time
 
 start_time = time.time()
 
-from queue import Queue
+from collections import deque
 
 # with open("inp_test_a.txt") as f:
 #     lines = f.read().split('\n')
@@ -40,7 +40,7 @@ print('ANSWER Part A -> ', answer_a)
 
 answer_b = 0
 d = {}
-q = Queue()
+q = deque()
 
 for line in lines:
     cid, numbers = line.split(':')
@@ -50,15 +50,14 @@ for line in lines:
     os = set(ours.split())
     matches = ws & os
     d[cid] = len(matches)
-    q.put(cid)
+    q.append(cid)
 
-while not q.empty():
+while q:
     answer_b += 1
-    k = q.get()
-    for i in range(k + 1, k + d[k] + 1):
-        q.put(i)
+    k = q.popleft()
+    q.extend(range(k + 1, k + d[k] + 1))
 
-print('ANSWER Part B -> ', answer_b)
+print('ANSWER Part B ->', answer_b)
 
 
 end_time = time.time()
