@@ -25,13 +25,12 @@ answer_a = 0
 for line in lines:
     _, numbers = line.split(':')
     winner, ours = numbers.split('|')
-    ws = set(winner.split())
-    os = set(ours.split())
-    matches = ws & os
+    matches = set(winner.split()) & set(ours.split())
+    
     if matches:
         answer_a += 2 ** (len(matches) - 1)
 
-print('ANSWER Part A -> ', answer_a)
+print('ANSWER Part A ->', answer_a)
 
 
 #########################
