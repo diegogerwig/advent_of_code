@@ -6,7 +6,6 @@ from colorama import init, Fore
 init(autoreset=True)
 
 def parse_data(puzzle_input):
-    """Parse input and convert ranges to [start, stop) notation."""
     blocks = [lines.split("\n") for lines in puzzle_input.split("\n\n")]
     seeds = [int(seed) for seed in blocks[0][0].split()[1:]]
     transforms = [
@@ -16,13 +15,11 @@ def parse_data(puzzle_input):
     return seeds, transforms
 
 def part1(data):
-    """Solve part 1."""
     seeds, transforms = data
     locations = plant_seed_ranges([(seed, seed + 1) for seed in seeds], transforms)
     return min(locations)[0]
 
 def part2(data):
-    """Solve part 2."""
     seeds, transforms = data
     locations = plant_seed_ranges(
         [(seed, seed + num) for seed, num in zip(seeds[::2], seeds[1::2])], transforms
@@ -56,7 +53,6 @@ def grow_range(seed_start, seed_stop, transform):
     return [(seed_start, seed_stop)]
 
 def solve(input_file):
-    """Solve the puzzle for the given input."""
     data = parse_data(input_file)
     yield part1(data)
     yield part2(data)
