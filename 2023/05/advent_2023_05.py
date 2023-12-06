@@ -1,75 +1,76 @@
 #!/usr/bin/python3
 
-import time
+import pathlib
+import os
+from colorama import init, Fore
+init(autoreset=True)
 
-start_time = time.time()
+def parse_data(puzzle_input):
+    """Parse input and convert ranges to [start, stop) notation."""
+    blocks = [lines.split("\n") for lines in puzzle_input.split("\n\n")]
+    seeds = [int(seed) for seed in blocks[0][0].split()[1:]]
+    transforms = [
+        [(src, src + num, dst - src) for dst, src, num in [map(int, line.split()) for line in lines[1:]]]
+        for lines in blocks[1:]
+    ]
+    return seeds, transforms
 
-from collections import defaultdict
+def part1(data):
+    """Solve part 1."""
+    seeds, transforms = data
+    locations = plant_seed_ranges([(seed, seed + 1) for seed in seeds], transforms)
+    return min(locations)[0]
 
-# with open("inp_test_a.txt") as f:
-#     lines = f.read().split('\n')
-#     lines = [line for line in lines if line]
+def part2(data):
+    """Solve part 2."""
+    seeds, transforms = data
+    locations = plant_seed_ranges(
+        [(seed, seed + num) for seed, num in zip(seeds[::2], seeds[1::2])], transforms
+    )
+    return min(locations)[0]
 
-with open("inp_test_b.txt") as f:
-    lines = f.read().split('\n')
-    lines = [line for line in lines if line]
+def plant_seed_ranges(seeds, transforms):
+    """Plant ranges of seeds."""
+    for transform in transforms:
+        seeds = [new_seed for seed, num in seeds for new_seed in grow_range(seed, num, transform)]
+    return seeds
 
-# with open("inp.txt") as f:
-#     lines = f.read().split('\n')
-#     lines = [line for line in lines if line]
+def grow_range(seed_start, seed_stop, transform):
+    """Grow a range of seeds one stage."""
+    if seed_stop <= seed_start:
+        return []
 
+    for start, stop, offset in transform:
+        if start <= seed_start < stop and start < seed_stop <= stop:
+            return [(seed_start + offset, seed_stop + offset)]
 
-#########################
-###      PART A      ####
-#########################
+        if seed_stop <= start or seed_start >= stop:
+            continue
 
-answer_a = 0
+        return (
+            grow_range(seed_start, start, transform)
+            + [(max(seed_start, start) + offset, min(seed_stop, stop) + offset)]
+            + grow_range(stop, seed_stop, transform)
+        )
 
-d = defaultdict(dict)
+    return [(seed_start, seed_stop)]
 
-seeds = [int(k) for k in lines[0][7:].split()]
-for line in lines[1:]:
-    if 'map' in line:
-        src, _, dst = line[:-5].split('-')
-        continue
+def solve(input_file):
+    """Solve the puzzle for the given input."""
+    data = parse_data(input_file)
+    yield part1(data)
+    yield part2(data)
 
-    dst_base, src_base, lenght = [int(k) for k in line.split()]
-    d[src][src_base] = (dst_base, lenght)
+if __name__ == "__main__":
+    dir_input = "./input"
 
+    file_input = os.listdir(dir_input)
 
-def _get_mapping(value, resource):
-    mappings = sorted(d[resource].items())
-    for src, (dst, l) in mappings:
-        if value >= src and value < src + l:
-            return dst + value - src
-    return value
+    for file_name in file_input:
+        file_path = os.path.join(dir_input, file_name)
 
-
-answer_a = float('inf')
-for seed in seeds:
-    soil = _get_mapping(seed, 'seed')
-    fertilizer = _get_mapping(soil, 'soil')
-    water = _get_mapping(fertilizer, 'fertilizer')
-    light = _get_mapping(water, 'water')
-    temperature = _get_mapping(light, 'light')
-    humidity = _get_mapping(temperature, 'temperature')
-    location = _get_mapping(humidity, 'humidity')
-    answer_a = min(answer_a, location)
-
-print('ANSWER Part A ->', answer_a)
-
-
-#########################
-###      PART B      ####
-#########################
-
-answer_b = 0
-
-
-
-print('ANSWER Part B ->', answer_b)
-
-
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"Execution time: {execution_time} seconds")
+        print(f"\n{Fore.YELLOW}{file_path}:")
+        input_file = pathlib.Path(file_path).read_text().rstrip()
+        solutions = solve(input_file)
+        print("\n".join(str(solution) for solution in solutions))
+        print("\n****************************************************")
