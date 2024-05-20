@@ -14,7 +14,6 @@ def parse_data(puzzle_input):
     part2 = tuple(
         int(line.split(":")[1].replace(" ", "")) for line in puzzle_input.split("\n")
     )
-
     return list(zip(*part1)), part2
 
 def part1(data):
