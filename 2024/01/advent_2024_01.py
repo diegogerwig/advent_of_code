@@ -71,7 +71,6 @@ Once again consider your left and right lists. What is their similarity score?
 '''
 
 import os
-from collections import Counter
 from colorama import init, Fore
 
 init(autoreset=True)
