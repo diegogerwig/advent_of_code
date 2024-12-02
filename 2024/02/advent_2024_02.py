@@ -67,11 +67,21 @@ def is_safe_report(levels):
     - Levels are either all increasing or all decreasing.
     - Any two adjacent levels differ by at least 1 and at most 3.
     """
-    diffs = [levels[i + 1] - levels[i] for i in range(len(levels) - 1)]
+    diffs = []
     
-    # Check if all differences are within the range [-3, -1] (decreasing) or [1, 3] (increasing)
-    if all(-3 <= diff <= -1 for diff in diffs) or all(1 <= diff <= 3 for diff in diffs):
+    for i in range(len(levels) - 1):
+        # Calculate the difference between the current level and the next
+        diff = levels[i + 1] - levels[i]
+        diffs.append(diff)
+
+    # Check if the differences are all valid for a strictly decreasing sequence
+    if all(-3 <= diff <= -1 for diff in diffs):
         return True
+
+    # Check if the differences are all valid for a strictly increasing sequence
+    if all(1 <= diff <= 3 for diff in diffs):
+        return True
+    
     return False
 
 
@@ -122,8 +132,8 @@ def process_directory(input_dir="./input/"):
     for file in files:
         filepath = os.path.join(input_dir, file)
         try:
-            safe_count, total_safe = process_file(filepath)
-            results[file] = (True, safe_count, total_safe)
+            part1_result, part2_result = process_file(filepath)
+            results[file] = (True, part1_result, part2_result)
         except Exception as e:
             results[file] = (False, str(e))
     
@@ -136,9 +146,9 @@ if __name__ == "__main__":
     
     for file, result in results.items():
         if result[0]:  # Successfully processed
-            safe_count, total_safe = result[1], result[2]
-            print(f"{Fore.CYAN}{file}:")
-            print(f"  {Fore.YELLOW}Safe Reports: {Fore.GREEN}{safe_count}")
-            print(f"  {Fore.YELLOW}Safe With One Removal: {Fore.GREEN}{total_safe}")
+            part1, part2 = result[1], result[2]
+            print(f"{Fore.BLUE}{file}:")
+            print(f"  {Fore.YELLOW}Part 1 (Safe reports): {Fore.GREEN}{part1}")
+            print(f"  {Fore.YELLOW}Part 2 (Safe reports with one removal): {Fore.GREEN}{part2}")
         else:  # Error during processing
             print(f"{Fore.CYAN}{file}: {Fore.RED}Error - {result[1]}")
