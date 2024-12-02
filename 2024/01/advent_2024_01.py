@@ -77,6 +77,12 @@ init(autoreset=True)
 
 
 def calculate_min_total_distance(left_list, right_list):
+    """
+    Calculate the minimum total distance between two sorted lists of integers.
+    The distance between two numbers is their absolute difference. This function
+    sorts both input lists and calculates the total distance by summing up the 
+    distances of corresponding elements.
+    """
     left_list_sorted = sorted(left_list)
     right_list_sorted = sorted(right_list)
 
@@ -91,6 +97,11 @@ def calculate_min_total_distance(left_list, right_list):
 
 
 def calculate_similarity_score(left_list, right_list):
+    """
+    Calculate a similarity score between two lists of integers.
+    The similarity score is the sum of the product of integers from the left list
+    that match integers in the right list, multiplied by their count in the right list.
+    """
     right_count = {}
     for num in right_list:
         if num in right_count:
@@ -108,6 +119,13 @@ def calculate_similarity_score(left_list, right_list):
 
 
 def process_file(filepath):
+    """
+    Process a single file containing two columns of integer data.
+    The function reads the file, processes the integers into two lists, and 
+    calculates:
+    - The minimum total distance between the two lists.
+    - The similarity score between the two lists.
+    """
     with open(filepath, 'r') as file:
         lines = file.readlines()
         left_list, right_list = [], []
@@ -122,6 +140,9 @@ def process_file(filepath):
 
 
 def process_directory(input_dir="./input/"):
+    """
+    Processes all files in the specified directory.
+    """
     files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
     results = {}
     
