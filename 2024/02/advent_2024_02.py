@@ -116,7 +116,10 @@ def process_file(filepath):
                 safe_with_removal_count += 1
         
         total_safe = safe_count + safe_with_removal_count
-        return safe_count, total_safe
+    
+        part1_result = safe_count
+        part2_result = total_safe
+        return part1_result, part2_result
 
 
 def process_directory(input_dir="./input/"):
