@@ -91,19 +91,11 @@ def search_xmas(grid):
     """
     Count all occurrences of the word 'XMAS' in all directions in the grid.
     """
-    word_to_find = "XMAS"
     total_rows = len(grid)
     total_columns = len(grid[0])
-    word_length = len(word_to_find)
     total_found = 0
     
-    def is_within_bounds(row, column):
-        if row < 0 or row >= total_rows:
-            return False
-        if column < 0 or column >= total_columns:
-            return False
-        return True
-    
+    # Define all possible directions to check
     directions = [
         (0, 1),    # Right
         (1, 0),    # Down
@@ -115,26 +107,30 @@ def search_xmas(grid):
         (-1, 1),   # Diagonal up-right
     ]
     
+    # Find X positions first
     for row in range(total_rows):
         for column in range(total_columns):
-            
-            for dir_row, dir_column in directions:
-                word_found = True
+            if grid[row][column] == 'X':
                 
-                for i in range(word_length):
-                    new_row = row + (i * dir_row)
-                    new_column = column + (i * dir_column)
+                # For each X found, check all directions
+                for dir_row, dir_column in directions:
+                    # Calculate positions for M, A, S
+                    row1 = row + dir_row
+                    col1 = column + dir_column
+                    row2 = row + 2*dir_row
+                    col2 = column + 2*dir_column
+                    row3 = row + 3*dir_row
+                    col3 = column + 3*dir_column
                     
-                    if not is_within_bounds(new_row, new_column):
-                        word_found = False
-                        break
+                    # Check if positions are within grid and form 'MAS'
+                    if (0 <= row1 < total_rows and 0 <= col1 < total_columns and
+                        0 <= row2 < total_rows and 0 <= col2 < total_columns and
+                        0 <= row3 < total_rows and 0 <= col3 < total_columns and
+                        grid[row1][col1] == 'M' and
+                        grid[row2][col2] == 'A' and
+                        grid[row3][col3] == 'S'):
                         
-                    if grid[new_row][new_column] != word_to_find[i]:
-                        word_found = False
-                        break
-                
-                if word_found:
-                    total_found += 1
+                        total_found += 1
     
     return total_found
 
