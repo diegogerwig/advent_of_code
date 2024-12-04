@@ -43,7 +43,6 @@ from colorama import init, Fore
 
 init(autoreset=True)
 
-
 import re
 
 def sum_valid_mul_results(content: str) -> int:
