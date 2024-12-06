@@ -218,7 +218,7 @@ def parse_map(content):
     return grid, guard_pos, direction
 
 
-def guard_positions(content):
+def guard_movements(content):
     """
     Simulates guard patrol and counts distinct positions visited before leaving the mapped area.
     """
@@ -376,12 +376,12 @@ def obstacle_positions(content):
 def process_file(filepath):
     """
     Processes a single file and returns the results.
-    - Calculate the gaurd patrol movements
-    - Calculate the number of obstacle positions that create a loop
+    - Calculate the guard patrol movements
+    - Calculate the number of obstacle positions that create a loop in the patrol path
     """
     with open(filepath, 'r') as file:
         content = file.read()
-        part1_result = guard_positions(content)
+        part1_result = guard_movements(content)
         part2_result = obstacle_positions(content)
         return part1_result, part2_result
 
@@ -415,7 +415,7 @@ if __name__ == "__main__":
         if result[0]:  # Successfully processed
             part1, part2 = result[1], result[2]
             print(f"{Fore.BLUE}{file}:")
-            print(f"  {Fore.YELLOW}Part 1 (Guard positions): {Fore.GREEN}{part1}")
+            print(f"  {Fore.YELLOW}Part 1 (Guard movements): {Fore.GREEN}{part1}")
             print(f"  {Fore.YELLOW}Part 2 (Obstacle positions): {Fore.GREEN}{part2}")
         else:  # Error during processing
             print(f"{Fore.CYAN}{file}: {Fore.RED}Error - {result[1]}")
