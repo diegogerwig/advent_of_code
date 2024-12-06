@@ -233,7 +233,7 @@ def guard_movements(content):
     # Initialize tracking variables
     visited = set([guard_pos])
     r, c = guard_pos
-    max_steps = rows * cols * 2
+    max_steps = rows * cols * 4  # Maximum steps to prevent infinite loop
     steps = 0
     states = set()
 
@@ -277,7 +277,7 @@ def simulate_guard_movement(grid, start_pos, start_direction, max_steps=None):
     directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # N, E, S, W
     
     if max_steps is None:
-        max_steps = rows * cols * 2
+        max_steps = rows * cols * 4  # Maximum steps to prevent infinite loop
 
     r, c = start_pos
     direction = start_direction
