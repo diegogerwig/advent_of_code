@@ -184,6 +184,8 @@ from colorama import init, Fore
 
 init(autoreset=True)
 
+from tqdm import tqdm
+
 
 def parse_map(content):
     """
@@ -268,25 +270,33 @@ def guard_movements(content):
     return len(visited)
 
 
-def simulate_guard_movement(grid, start_pos, start_direction, max_steps=None):
+def simulate_guard_movement(grid, start_pos, start_direction):
     """
-    Simulates guard movements and returns whether it loops and visited positions.
+    Simulates guard movements.
+    Returns True if guard gets stuck in a loop, False if exits the map.
     """
     rows = len(grid)
     cols = len(grid[0])
     directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # N, E, S, W
     
-    if max_steps is None:
-        max_steps = rows * cols * 4  # Maximum steps to prevent infinite loop
-
     r, c = start_pos
     direction = start_direction
-    states = set([(r, c, direction)])
-    steps = 0
     
-    while steps < max_steps:
+    # Create a grid to track visited states (position + direction)
+    visited = []
+    for _ in range(rows):
+        row = []
+        for _ in range(cols):
+            row.append([False, False, False, False])  # One slot for each direction
+        visited.append(row)
+    
+    # Mark initial position
+    visited[r][c][direction] = True
+    
+    while True:  # Loop until we find a loop or exit
         dr, dc = directions[direction]
-        next_r, next_c = r + dr, c + dc
+        next_r = r + dr
+        next_c = c + dc
         
         # Check if guard would leave the map
         if next_r < 0 or next_r >= rows or next_c < 0 or next_c >= cols:
@@ -296,14 +306,14 @@ def simulate_guard_movement(grid, start_pos, start_direction, max_steps=None):
         if grid[next_r][next_c] == '#' or grid[next_r][next_c] == 'O':
             direction = (direction + 1) % 4
         else:
-            r, c = next_r, next_c
-            if (r, c, direction) in states:
+            r = next_r
+            c = next_c
+            # If we've seen this state before, it's a loop
+            if visited[r][c][direction]:
                 return True
-            states.add((r, c, direction))
+            visited[r][c][direction] = True
             
-        steps += 1
-    
-    return True  # If we reach max_steps, assume it's a loop
+    return True
 
 
 def obstacle_positions(content):
@@ -312,62 +322,52 @@ def obstacle_positions(content):
     """
     # Get initial map state
     grid, guard_pos, start_direction = parse_map(content)
-    rows, cols = len(grid), len(grid[0])
+    rows = len(grid)
+    cols = len(grid[0])
     
     # Store the initial grid state
     original_grid = []
     for row in grid:
         original_grid.append(row[:])
-
+        
     possible_positions = 0
-    total_positions = rows * cols
-    positions_checked = 0
     loops_found = []
 
-    print(f"\nSearching for obstacle positions in a {rows}x{cols} grid")
-    print("=" * 62)
+    # Create progress bar for total positions to check
+    total_positions = rows * cols
     
-    # Try placing an obstacle at each position
-    for r in range(rows):
-        for c in range(cols):
-            positions_checked += 1
-            progress = (positions_checked / total_positions) * 100
+    # Iterate through all positions with tqdm progress bar
+    print(f"Checking {total_positions} positions for possible loops. The size of the map is {rows}x{cols}.")
+    for r, c in tqdm([(r, c) for r in range(rows) for c in range(cols)], 
+                     desc="Checking positions", 
+                     total=total_positions):
+        
+        # Skip if position:
+        # - is guard's starting position
+        # - already has an obstacle
+        # - already has the guard
+        if ((r, c) == guard_pos or 
+            original_grid[r][c] == '#' or 
+            original_grid[r][c] in '^>v<'):
+            continue
             
-            # Update progress bar
-            bar_length = 50
-            filled_length = int(bar_length * positions_checked // total_positions)
-            bar = '█' * filled_length + '-' * (bar_length - filled_length)
-            
-            print(f'\rProgress: [{bar}] {progress:.1f}% ({positions_checked}/{total_positions}) - Loops found: {possible_positions}', end='')
-            
-            # Skip if position:
-            # - is guard's starting position
-            # - already has an obstacle
-            # - already has the guard
-            if ((r, c) == guard_pos or 
-                original_grid[r][c] == '#' or 
-                original_grid[r][c] in '^>v<'):
-                continue
-                
-            # Reset grid to original state
-            grid = []
-            for row in original_grid:
-                grid.append(row[:])
-            
-            # Place new obstacle
-            grid[r][c] = 'O'
-            
-            # Simulate guard movement with new obstacle
-            creates_loop = simulate_guard_movement(grid, guard_pos, start_direction)
-            
-            # If it creates a loop, count this position and store it
-            if creates_loop:
-                possible_positions += 1
-                loops_found.append((r, c))
+        # Reset grid to original state
+        grid = []
+        for row in original_grid:
+            grid.append(row[:])
+        
+        # Place new obstacle
+        grid[r][c] = 'O'
+        
+        # Simulate guard movement with new obstacle
+        creates_loop = simulate_guard_movement(grid, guard_pos, start_direction)
+        
+        # If it creates a loop, count this position and store it
+        if creates_loop:
+            possible_positions += 1
+            loops_found.append((r, c))
     
-    print("\n" + "=" * 62)
-    print(f"Search complete!")
-    print(f"Total loops found: {possible_positions}")
+    print(f"\nTotal loops found: {possible_positions}")
     print("Loop positions:", ', '.join([f"({r}, {c})" for r, c in loops_found]))
     
     return possible_positions
