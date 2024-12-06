@@ -196,12 +196,12 @@ def parse_map(content):
         if line and not line.isspace():
             grid.append(list(line))
     
-    # Direction mapping
-    dir_idx = {"^": 0, ">": 1, "v": 2, "<": 3}
-    
     # Find guard's initial position and direction
     guard_pos = None
     direction = None
+
+    # Direction mapping
+    dir_idx = {"^": 0, ">": 1, "v": 2, "<": 3}
     
     for r, row in enumerate(grid):
         for c, cell in enumerate(row):
@@ -217,13 +217,15 @@ def parse_map(content):
         
     return grid, guard_pos, direction
 
+
 def guard_positions(content):
     """
     Simulates guard patrol and counts distinct positions visited before leaving the mapped area.
     """
-    # Parse map using the new function
+    # Parse map and get initial state
     grid, guard_pos, direction = parse_map(content)
-    rows, cols = len(grid), len(grid[0])
+    rows = len(grid)
+    cols = len(grid[0])
 
     # Directions: (North, East, South, West) as coordinate changes
     directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  
@@ -231,7 +233,7 @@ def guard_positions(content):
     # Initialize tracking variables
     visited = set([guard_pos])
     r, c = guard_pos
-    max_steps = rows * cols * 4
+    max_steps = rows * cols * 2
     steps = 0
     states = set()
 
@@ -274,11 +276,10 @@ def simulate_guard_movement(grid, start_pos, start_direction, max_steps=None):
     directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # N, E, S, W
     
     if max_steps is None:
-        max_steps = rows * cols * 4
+        max_steps = rows * cols * 2
 
     r, c = start_pos
     direction = start_direction
-    visited = set([(r, c)])
     states = set([(r, c, direction)])
     steps = 0
     
@@ -288,7 +289,7 @@ def simulate_guard_movement(grid, start_pos, start_direction, max_steps=None):
         
         # Check if guard would leave the map
         if next_r < 0 or next_r >= rows or next_c < 0 or next_c >= cols:
-            return False, visited
+            return False
             
         # Check if next position is blocked
         if grid[next_r][next_c] == '#' or grid[next_r][next_c] == 'O':
@@ -296,13 +297,13 @@ def simulate_guard_movement(grid, start_pos, start_direction, max_steps=None):
         else:
             r, c = next_r, next_c
             if (r, c, direction) in states:
-                return True, visited
+                return True
             states.add((r, c, direction))
-            visited.add((r, c))
             
         steps += 1
     
-    return True, visited  # If we reach max_steps, assume it's a loop
+    return True  # If we reach max_steps, assume it's a loop
+
 
 def obstacle_positions(content):
     """
@@ -313,14 +314,17 @@ def obstacle_positions(content):
     rows, cols = len(grid), len(grid[0])
     
     # Store the initial grid state
-    original_grid = [row[:] for row in grid]
+    original_grid = []
+    for row in grid:
+        original_grid.append(row[:])
+
     possible_positions = 0
     total_positions = rows * cols
     positions_checked = 0
     loops_found = []
 
     print(f"\nSearching for obstacle positions in a {rows}x{cols} grid")
-    print("=" * 50)
+    print("=" * 62)
     
     # Try placing an obstacle at each position
     for r in range(rows):
@@ -329,7 +333,7 @@ def obstacle_positions(content):
             progress = (positions_checked / total_positions) * 100
             
             # Update progress bar
-            bar_length = 40
+            bar_length = 50
             filled_length = int(bar_length * positions_checked // total_positions)
             bar = '█' * filled_length + '-' * (bar_length - filled_length)
             
@@ -345,21 +349,22 @@ def obstacle_positions(content):
                 continue
                 
             # Reset grid to original state
-            grid = [row[:] for row in original_grid]
+            grid = []
+            for row in original_grid:
+                grid.append(row[:])
             
             # Place new obstacle
             grid[r][c] = 'O'
             
             # Simulate guard movement with new obstacle
-            creates_loop, visited = simulate_guard_movement(grid, guard_pos, start_direction)
+            creates_loop = simulate_guard_movement(grid, guard_pos, start_direction)
             
             # If it creates a loop, count this position and store it
             if creates_loop:
                 possible_positions += 1
                 loops_found.append((r, c))
     
-    # Final summary
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 62)
     print(f"Search complete!")
     print(f"Total loops found: {possible_positions}")
     print("Loop positions:", ', '.join([f"({r}, {c})" for r, c in loops_found]))
@@ -369,9 +374,9 @@ def obstacle_positions(content):
 
 def process_file(filepath):
     """
-    Processes a single file :
-    -
-    -
+    Processes a single file and returns the results.
+    - Calculate the gaurd patrol movements
+    - Calculate the number of obstacle positions that create a loop
     """
     with open(filepath, 'r') as file:
         content = file.read()
