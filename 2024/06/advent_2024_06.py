@@ -272,7 +272,8 @@ def simulate_guard_movement(grid, start_pos, start_direction, max_steps=None):
     """
     Simulates guard movement and returns whether it loops and visited positions.
     """
-    rows, cols = len(grid), len(grid[0])
+    rows = len(grid)
+    cols = len(grid[0])
     directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # N, E, S, W
     
     if max_steps is None:
