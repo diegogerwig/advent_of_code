@@ -188,7 +188,7 @@ init(autoreset=True)
 def parse_map(content):
     """
     Parses the input map and returns the grid, guard position and initial direction.
-    Initial_direction: Integer representing initial direction (0:N, 1:E, 2:S, 3:W)
+    Initial direction: Integer representing initial direction (0:N, 1:E, 2:S, 3:W)
     """
     # Parse the input map
     grid = []
@@ -270,7 +270,7 @@ def guard_movements(content):
 
 def simulate_guard_movement(grid, start_pos, start_direction, max_steps=None):
     """
-    Simulates guard movement and returns whether it loops and visited positions.
+    Simulates guard movements and returns whether it loops and visited positions.
     """
     rows = len(grid)
     cols = len(grid[0])
