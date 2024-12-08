@@ -219,18 +219,9 @@ def calculate_antinodes(width, height, antennas):
                 for antinode in pair_antinodes:
                     all_antinodes.add(antinode)
     
+    print(f"{Fore.GREEN}    Antinodes locations: {Fore.RESET}{all_antinodes}")
+    
     return all_antinodes
-
-
-# def is_collinear(p1, p2, p3):
-#     """
-#     Check if three points are perfectly in line
-#     """
-#     x1, y1 = p1
-#     x2, y2 = p2
-#     x3, y3 = p3
-#     # Cross product should be 0 for collinear points
-#     return (y2 - y1) * (x3 - x1) == (y3 - y1) * (x2 - x1)
 
 
 def get_antinodes_resonant(p1, p2, width, height):
@@ -296,27 +287,63 @@ def calculate_antinodes_resonant(width, height, antennas):
                 pair_antinodes = get_antinodes_resonant(p1, p2, width, height)
                 all_antinodes.update(pair_antinodes)
     
+    print(f"{Fore.GREEN}    Antinodes locations: {Fore.RESET}{all_antinodes}")
+
     return all_antinodes
+
+
+def print_map(content, antinodes=None):
+    """
+    Print the map with:
+    - Antennas in red
+    - Antinodes in green (if provided)
+    - Regular positions in white/default color
+    """
+    # Get the map lines (only the ones with dots or alphanumeric characters)
+    grid_lines = []
+    for line in content.splitlines():
+        line = line.strip()
+        if line and ('.' in line or any(c.isalnum() for c in line)):
+            grid_lines.append(line)
+    
+    # Convert antinodes to set for faster lookup if provided
+    antinode_positions = set() if antinodes is None else antinodes
+    
+    print(f"{Fore.YELLOW}Map visualization:")
+    # Print each line of the map
+    for y, line in enumerate(grid_lines):
+        for x, char in enumerate(line):
+            if char.isalnum():
+                # Antenna position - print in red
+                print(f"{Fore.RED}{char}{Fore.RESET}", end='')
+            elif (x, y) in antinode_positions:
+                # Antinode position - print # in green
+                print(f"{Fore.GREEN}#{Fore.RESET}", end='')
+            else:
+                # Regular position - print in default color
+                print(char, end='')
+        print()  # New line after each row
+    print()  # Extra line at the end
 
 
 def antinodes(content):
     """
-    Count total number of antinodes
+    Count total number of antinodes 
     """
     width, height, antennas = parse_grid(content)
-    antinodes = calculate_antinodes(width, height, antennas)
-    print(f"{Fore.GREEN}Antinodes locations: {Fore.RESET}{antinodes}")
-    return len(antinodes)
+    antinodes_set = calculate_antinodes(width, height, antennas)
+    print_map(content, antinodes_set)
+    return len(antinodes_set)
 
 
 def antinodes_resonant(content):
     """
-    Count total number of antinodes with resonant rules
+    Count total number of antinodes with resonant rules 
     """
     width, height, antennas = parse_grid(content)
-    antinodes = calculate_antinodes_resonant(width, height, antennas)
-    print(f"{Fore.GREEN}Antinodes locations: {Fore.RESET}{antinodes}")
-    return len(antinodes)
+    antinodes_set = calculate_antinodes_resonant(width, height, antennas)
+    print_map(content, antinodes_set)
+    return len(antinodes_set)
 
 
 def process_file(filepath):
