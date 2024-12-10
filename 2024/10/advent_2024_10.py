@@ -147,6 +147,17 @@ def create_grid(content):
             for char in line.strip():
                 row.append(int(char))
             grid.append(row)
+            # Print each row with specially colored numbers
+            colored_row = []
+            for num in row:
+                if num == 0:
+                    colored_row.append(f"{Fore.GREEN}{num}")
+                elif num == 9:
+                    colored_row.append(f"{Fore.YELLOW}{num}")
+                else:
+                    colored_row.append(f"{Fore.WHITE}{num}")
+            print(' '.join(colored_row))
+
     return grid
 
 
