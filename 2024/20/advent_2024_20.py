@@ -207,7 +207,7 @@ TEST_SOLUTIONS = {
     },
     "input_I.txt": {
         "part1": 1463,
-        "part2": 'N/A',
+        "part2": 985332,
     }
 }
 
