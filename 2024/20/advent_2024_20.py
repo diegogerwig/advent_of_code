@@ -203,10 +203,10 @@ STATUS_COLORS = {
 TEST_SOLUTIONS = {
     ".test_I.txt": {
         "part1": 0,
-        "part2": 1463,
+        "part2": 0,
     },
     "input_I.txt": {
-        "part1": 0,
+        "part1": 1463,
         "part2": 'N/A',
     }
 }
