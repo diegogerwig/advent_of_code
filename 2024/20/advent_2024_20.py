@@ -202,11 +202,11 @@ STATUS_COLORS = {
 
 TEST_SOLUTIONS = {
     ".test_I.txt": {
-        "part1": 72,
-        "part2": 'N/A',
+        "part1": 0,
+        "part2": 1463,
     },
     "input_I.txt": {
-        "part1": 'N/A',
+        "part1": 0,
         "part2": 'N/A',
     }
 }
@@ -220,14 +220,27 @@ def print_header(filename, part):
     print(f"{Fore.CYAN}Part {part}")
     print(f"{Fore.CYAN}{'='*80}\n")
 
+
 def parse_input(content):
     """
     Parse the input content 
     """
-    return [line.strip() for line in content.splitlines() if line.strip()]
-
-
-
+    # Split the content into lines
+    lines = content.splitlines()
+    
+    # Create empty list for result
+    result = []
+    
+    # Process each line
+    for line in lines:
+        # Remove whitespace
+        clean_line = line.strip()
+        
+        # Only keep non-empty lines
+        if clean_line:
+            result.append(clean_line)
+            
+    return result
 
 
 def get_phase_ends(grid, x, y, W, H):
