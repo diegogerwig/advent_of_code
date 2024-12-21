@@ -142,17 +142,19 @@ TEST_SOLUTIONS = {
     }
 }
 
-# Define the keypads layout
+# Define the layout of the numeric keypad (the one on the door)
+# Each key is mapped to its (x, y) coordinates
 NUMERIC_KEYPAD = {
-    "7": (0, 0), "8": (1, 0), "9": (2, 0),
-    "4": (0, 1), "5": (1, 1), "6": (2, 1),
-    "1": (0, 2), "2": (1, 2), "3": (2, 2),
-    "X": (0, 3), "0": (1, 3), "A": (2, 3)
+    "7": (0, 0), "8": (1, 0), "9": (2, 0),  # Top row
+    "4": (0, 1), "5": (1, 1), "6": (2, 1),  # Middle row
+    "1": (0, 2), "2": (1, 2), "3": (2, 2),  # Bottom row
+    "X": (0, 3), "0": (1, 3), "A": (2, 3)   # Bottom row with gap (X)
 }
 
+# Define the layout of the directional keypad (the one used to control robots)
 DIRECTIONAL_KEYPAD = {
-    "X": (0, 0), "^": (1, 0), "A": (2, 0),
-    "<": (0, 1), "v": (1, 1), ">": (2, 1)
+    "X": (0, 0), "^": (1, 0), "A": (2, 0),  # Top row
+    "<": (0, 1), "v": (1, 1), ">": (2, 1)   # Bottom row
 }
 
 
@@ -173,102 +175,229 @@ def parse_input(content):
     return [line.strip() for line in content.splitlines() if line.strip()]
 
 
-@functools.cache
+# Store previous results to avoid recalculating
+# This replaces the @functools.cache decorator with a simple dictionary
+movement_cache = {}
+
+def get_horizontal_movements(start_x, end_x):
+    """
+    Calculate the horizontal movements needed to go from start_x to end_x
+    Returns: String of '>' or '<' characters
+    """
+    # If we need to move right
+    if end_x > start_x:
+        return ">" * (end_x - start_x)
+    # If we need to move left
+    else:
+        return "<" * (start_x - end_x)
+
+def get_vertical_movements(start_y, end_y):
+    """
+    Calculate the vertical movements needed to go from start_y to end_y
+    Returns: String of '^' or 'v' characters
+    """
+    # If we need to move up
+    if end_y < start_y:
+        return "^" * (start_y - end_y)
+    # If we need to move down
+    else:
+        return "v" * (end_y - start_y)
+
+def is_safe_move(current_pos, target_pos, gap_pos):
+    """
+    Check if moving from current position to target position is safe
+    (won't hit the gap/empty space)
+    """
+    current_x, current_y = current_pos
+    gap_x, gap_y = gap_pos
+    target_x, target_y = target_pos
+    
+    # Moving horizontally first won't hit gap
+    horizontal_safe = not (target_x == gap_x and current_y == gap_y)
+    # Moving vertically first won't hit gap
+    vertical_safe = not (target_y == gap_y and current_x == gap_x)
+    
+    return horizontal_safe, vertical_safe
+
+def get_movement_key(code, n):
+    """
+    Create a unique key for caching movement results
+    """
+    return f"{code}_{n}"
+
 def direction_command(code, n):
     """
-    Return the number of keys needed to type the directional code with n robots
+    Calculate the number of button presses needed for n robots to type the directional code
     """
+    # Check if we've already calculated this result
+    cache_key = get_movement_key(code, n)
+    if cache_key in movement_cache:
+        return movement_cache[cache_key]
+    
+    # Base case: if no more robots in chain (n=0), just return code length
     if n == 0:
+        movement_cache[cache_key] = len(code)
         return len(code)
-        
-    moves = 0
-    x_bad, y_bad = DIRECTIONAL_KEYPAD["X"]
-    x, y = DIRECTIONAL_KEYPAD["A"]
     
+    total_moves = 0
+    
+    # Get coordinates of the gap (X) and starting position (A)
+    gap_x, gap_y = DIRECTIONAL_KEYPAD["X"]
+    current_x, current_y = DIRECTIONAL_KEYPAD["A"]
+    
+    # Process each button in the code
     for button in code:
-        x_new, y_new = DIRECTIONAL_KEYPAD[button]
-        x_diff = ">" * (x_new - x) if x_new >= x else "<" * (x - x_new)
-        y_diff = "v" * (y_new - y) if y_new >= y else "^" * (y - y_new)
-        attempts = []
+        # Get coordinates of target button
+        target_x, target_y = DIRECTIONAL_KEYPAD[button]
         
-        if not (x_new == x_bad and y == y_bad):
-            attempts.append(direction_command(x_diff + y_diff + "A", n-1))
-        if not (y_new == y_bad and x == x_bad):
-            attempts.append(direction_command(y_diff + x_diff + "A", n-1))
-            
-        moves += min(attempts)
-        x, y = x_new, y_new
+        # Calculate movements needed in each direction
+        horizontal_moves = get_horizontal_movements(current_x, target_x)
+        vertical_moves = get_vertical_movements(current_y, target_y)
+        
+        # Check which moves are safe
+        horizontal_first_safe, vertical_first_safe = is_safe_move(
+            (current_x, current_y),
+            (target_x, target_y),
+            (gap_x, gap_y)
+        )
+        
+        # Try all possible safe movement combinations
+        possible_moves = []
+        
+        # Try horizontal movement first if safe
+        if horizontal_first_safe:
+            move_sequence = horizontal_moves + vertical_moves + "A"
+            moves = direction_command(move_sequence, n-1)
+            possible_moves.append(moves)
+        
+        # Try vertical movement first if safe
+        if vertical_first_safe:
+            move_sequence = vertical_moves + horizontal_moves + "A"
+            moves = direction_command(move_sequence, n-1)
+            possible_moves.append(moves)
+        
+        # Add the shortest valid sequence to total moves
+        total_moves += min(possible_moves)
+        
+        # Update current position
+        current_x, current_y = target_x, target_y
     
-    return moves
-
+    # Cache and return result
+    movement_cache[cache_key] = total_moves
+    return total_moves
 
 def keyboard_command(code, n):
     """
-    Return the number of keys needed to type the numeric code with n robots
+    Calculate the number of button presses needed to type the numeric code with n robots
     """
-    moves = 0
-    x_bad, y_bad = NUMERIC_KEYPAD["X"]
-    x, y = NUMERIC_KEYPAD["A"]
+    total_moves = 0
     
+    # Get coordinates of the gap (X) and starting position (A)
+    gap_x, gap_y = NUMERIC_KEYPAD["X"]
+    current_x, current_y = NUMERIC_KEYPAD["A"]
+    
+    # Process each button in the code
     for button in code:
-        x_new, y_new = NUMERIC_KEYPAD[button]
-        x_diff = ">" * (x_new - x) if x_new >= x else "<" * (x - x_new)
-        y_diff = "v" * (y_new - y) if y_new >= y else "^" * (y - y_new)
-        attempts = []
+        # Get coordinates of target button
+        target_x, target_y = NUMERIC_KEYPAD[button]
         
-        if not (x_new == x_bad and y == y_bad):
-            attempts.append(direction_command(x_diff + y_diff + "A", n))
-        if not (y_new == y_bad and x == x_bad):
-            attempts.append(direction_command(y_diff + x_diff + "A", n))
-            
-        moves += min(attempts)
-        x, y = x_new, y_new
+        # Calculate movements needed in each direction
+        horizontal_moves = get_horizontal_movements(current_x, target_x)
+        vertical_moves = get_vertical_movements(current_y, target_y)
+        
+        # Check which moves are safe
+        horizontal_first_safe, vertical_first_safe = is_safe_move(
+            (current_x, current_y),
+            (target_x, target_y),
+            (gap_x, gap_y)
+        )
+        
+        # Try all possible safe movement combinations
+        possible_moves = []
+        
+        # Try horizontal movement first if safe
+        if horizontal_first_safe:
+            move_sequence = horizontal_moves + vertical_moves + "A"
+            moves = direction_command(move_sequence, n)
+            possible_moves.append(moves)
+        
+        # Try vertical movement first if safe
+        if vertical_first_safe:
+            move_sequence = vertical_moves + horizontal_moves + "A"
+            moves = direction_command(move_sequence, n)
+            possible_moves.append(moves)
+        
+        # Add the shortest valid sequence to total moves
+        total_moves += min(possible_moves)
+        
+        # Update current position
+        current_x, current_y = target_x, target_y
     
-    return moves
-
+    return total_moves
 
 def calculate_complexity(code, num_robots):
     """
-    Calculate complexity for a given code and number of robots
+    Calculate the complexity of a code based on:
+    1. The number of moves needed to type it
+    2. The numeric value of the code
     """
-    length = keyboard_command(code, num_robots)
-    num = int(code[:-1])  # Remove the 'A' at the end
-    return length * num
-
+    # Calculate total moves needed
+    total_moves = keyboard_command(code, num_robots)
+    
+    # Get numeric value (remove 'A' from end and convert to integer)
+    numeric_value = int(code[:-1])
+    
+    # Calculate complexity
+    complexity = total_moves * numeric_value
+    
+    return complexity
 
 def part1(content):
     """
-    Calculate the sum of complexities for all codes with 2 robots
+    Solve part 1: Calculate sum of complexities with 2 robots
     """
+    # Record start time
     start_time = time.time()
     
-    # Parse input
+    # Get list of codes from input
     codes = parse_input(content)
     
-    # Calculate complexity for each code with 2 robots
-    result = sum(calculate_complexity(code, 2) for code in codes)
+    # Calculate total complexity
+    total = 0
+    for code in codes:
+        complexity = calculate_complexity(code, 2)
+        total += complexity
+    
+    # Calculate execution time
+    execution_time = time.time() - start_time
     
     return {
-        "value": result,
-        "execution_time": time.time() - start_time
+        "value": total,
+        "execution_time": execution_time
     }
-
 
 def part2(content):
     """
-    Calculate the sum of complexities for all codes with 25 robots
+    Solve part 2: Calculate sum of complexities with 25 robots
     """
+    # Record start time
     start_time = time.time()
     
-    # Parse input
+    # Get list of codes from input
     codes = parse_input(content)
     
-    # Calculate complexity for each code with 25 robots
-    result = sum(calculate_complexity(code, 25) for code in codes)
+    # Calculate total complexity
+    total = 0
+    for code in codes:
+        complexity = calculate_complexity(code, 25)
+        total += complexity
+    
+    # Calculate execution time
+    execution_time = time.time() - start_time
     
     return {
-        "value": result,
-        "execution_time": time.time() - start_time
+        "value": total,
+        "execution_time": execution_time
     }
 
 
