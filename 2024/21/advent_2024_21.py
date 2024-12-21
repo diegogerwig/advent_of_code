@@ -179,6 +179,7 @@ def parse_input(content):
 # This replaces the @functools.cache decorator with a simple dictionary
 movement_cache = {}
 
+
 def get_horizontal_movements(start_x, end_x):
     """
     Calculate the horizontal movements needed to go from start_x to end_x
@@ -191,6 +192,7 @@ def get_horizontal_movements(start_x, end_x):
     else:
         return "<" * (start_x - end_x)
 
+
 def get_vertical_movements(start_y, end_y):
     """
     Calculate the vertical movements needed to go from start_y to end_y
@@ -202,6 +204,7 @@ def get_vertical_movements(start_y, end_y):
     # If we need to move down
     else:
         return "v" * (end_y - start_y)
+
 
 def is_safe_move(current_pos, target_pos, gap_pos):
     """
@@ -219,11 +222,13 @@ def is_safe_move(current_pos, target_pos, gap_pos):
     
     return horizontal_safe, vertical_safe
 
+
 def get_movement_key(code, n):
     """
     Create a unique key for caching movement results
     """
     return f"{code}_{n}"
+
 
 def direction_command(code, n):
     """
@@ -286,6 +291,7 @@ def direction_command(code, n):
     movement_cache[cache_key] = total_moves
     return total_moves
 
+
 def keyboard_command(code, n):
     """
     Calculate the number of button presses needed to type the numeric code with n robots
@@ -335,6 +341,7 @@ def keyboard_command(code, n):
     
     return total_moves
 
+
 def calculate_complexity(code, num_robots):
     """
     Calculate the complexity of a code based on:
@@ -351,6 +358,7 @@ def calculate_complexity(code, num_robots):
     complexity = total_moves * numeric_value
     
     return complexity
+
 
 def part1(content):
     """
@@ -375,6 +383,7 @@ def part1(content):
         "value": total,
         "execution_time": execution_time
     }
+
 
 def part2(content):
     """
