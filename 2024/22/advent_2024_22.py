@@ -360,9 +360,6 @@ def part2(content):
 
 
 
-
-
-
 def determine_test_status(result, expected):
     """
     Determine the test status based on the result and expected value.
