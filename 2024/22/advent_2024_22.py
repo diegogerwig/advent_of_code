@@ -118,6 +118,9 @@ import sys
 import os
 from colorama import init, Fore
 import time
+from tqdm import tqdm
+from multiprocessing import Pool, cpu_count
+from itertools import product
 
 init(autoreset=True)
 
@@ -176,7 +179,6 @@ def parse_input(content):
             result.append(clean_line)
             
     return result
-
 
 
 
@@ -254,10 +256,7 @@ def part1(content):
 
 
 
-from multiprocessing import Pool, cpu_count
-from tqdm import tqdm
-from itertools import product
-import time
+
 
 def generate_price_sequence(initial, count):
     """Generate a sequence of prices (ones digits) from an initial secret"""
