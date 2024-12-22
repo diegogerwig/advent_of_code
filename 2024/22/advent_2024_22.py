@@ -429,7 +429,9 @@ def process_directory(input_dir="./input/"):
         raise FileNotFoundError(f"Input directory '{input_dir}' does not exist.")
     
     print(f"\n{Fore.CYAN}Processing files in directory: {Fore.YELLOW}{input_dir}")
-    files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+    files = [f for f in os.listdir(inpu
+                                   
+                                   t_dir) if os.path.isfile(os.path.join(input_dir, f))]
     results = {}
     
     for file in files:
