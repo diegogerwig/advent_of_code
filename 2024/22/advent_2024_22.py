@@ -253,11 +253,6 @@ def part1(content):
 
 
 
-
-
-
-
-
 def generate_price_sequence(initial, count):
     """Generate a sequence of prices (ones digits) from an initial secret"""
     prices = []
