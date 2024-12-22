@@ -181,8 +181,6 @@ def parse_input(content):
 
 
 
-
-
 def generate_next_secret(secret):
     """
     Generate the next secret number based on the rules:
