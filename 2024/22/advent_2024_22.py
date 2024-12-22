@@ -142,6 +142,10 @@ TEST_SOLUTIONS = {
         "part1": 37327623,
         "part2": 'N/A',
     },
+    ".test_II.txt": {
+        "part1": 'N/A',
+        "part2": 23,
+    },
     "input_I.txt": {
         "part1": 20332089158,
         "part2": 'N/A',
@@ -252,23 +256,114 @@ def part1(content):
 
 
 
+from multiprocessing import Pool, cpu_count
+from tqdm import tqdm
+from itertools import product
+import time
+
+def generate_price_sequence(initial, count):
+    """Generate a sequence of prices (ones digits) from an initial secret"""
+    prices = []
+    current = initial
+    
+    # Use a more efficient list building approach
+    for _ in range(count + 1):  # +1 for initial number
+        prices.append(current % 10)
+        current = generate_next_secret(current)
+    
+    return prices
+
+def get_price_changes(prices):
+    """Calculate the changes between consecutive prices"""
+    # More efficient list comprehension for changes
+    return [b - a for a, b in zip(prices[:-1], prices[1:])]
+
+def find_first_match(changes, target_sequence):
+    """Find the first occurrence of target_sequence in changes using a sliding window"""
+    target_len = len(target_sequence)
+    for i in range(len(changes) - target_len + 1):
+        # Use direct comparison for better performance
+        match = True
+        for j in range(target_len):
+            if changes[i + j] != target_sequence[j]:
+                match = False
+                break
+        if match:
+            return i + target_len
+    return -1
+
+def evaluate_sequence_batch(args):
+    """Evaluate a batch of sequences against all price sequences"""
+    sequences_batch, price_sequences = args
+    results = []
+    
+    for sequence in sequences_batch:
+        total_bananas = 0
+        for prices in price_sequences:
+            changes = get_price_changes(prices)
+            match_index = find_first_match(changes, sequence)
+            if match_index != -1:
+                total_bananas += prices[match_index]
+        results.append((sequence, total_bananas))
+    
+    return results
+
 def part2(content):
     """
-    Solution for Part 2
+    Solution for Part 2 with optimization and progress bars
     """
     start_time = time.time()
+    print(f"{Fore.CYAN}Starting Part 2 solution...")
     
     # Parse input
     data = parse_input(content)
+    initial_numbers = [int(x) for x in data]
     
-    # Your solution logic here
-    result = 0
+    # Generate price sequences for all buyers with progress bar
+    print(f"{Fore.YELLOW}Generating price sequences...")
+    sequences = []
+    for num in tqdm(initial_numbers, desc="Generating sequences"):
+        sequences.append(generate_price_sequence(num, 2000))
+    
+    # Generate all possible change sequences
+    possible_changes = [-3, -2, -1, 0, 1, 2, 3]
+    all_sequences = list(product(possible_changes, repeat=4))
+    
+    # Split sequences into batches for parallel processing
+    num_cores = cpu_count()
+    batch_size = len(all_sequences) // num_cores
+    sequence_batches = [
+        all_sequences[i:i + batch_size] 
+        for i in range(0, len(all_sequences), batch_size)
+    ]
+    
+    # Prepare arguments for parallel processing
+    pool_args = [(batch, sequences) for batch in sequence_batches]
+    
+    # Process sequences in parallel with progress bar
+    print(f"{Fore.YELLOW}Evaluating sequences using {num_cores} cores...")
+    max_bananas = 0
+    best_sequence = None
+    
+    with Pool(num_cores) as pool:
+        results = []
+        with tqdm(total=len(sequence_batches), desc="Processing batches") as pbar:
+            for batch_results in pool.imap_unordered(evaluate_sequence_batch, pool_args):
+                for sequence, bananas in batch_results:
+                    if bananas > max_bananas:
+                        max_bananas = bananas
+                        best_sequence = sequence
+                        print(f"\n{Fore.GREEN}New best sequence found: {sequence} → {bananas} bananas")
+                pbar.update(1)
+    
+    print(f"\n{Fore.GREEN}Best sequence found: {best_sequence}")
+    print(f"{Fore.GREEN}Maximum bananas: {max_bananas}")
+    print(f"{Fore.CYAN}Execution time: {time.time() - start_time:.2f} seconds")
     
     return {
-        "value": result,
+        "value": max_bananas,
         "execution_time": time.time() - start_time
     }
-
 
 
 
