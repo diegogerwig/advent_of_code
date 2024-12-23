@@ -264,6 +264,7 @@ def find_maximal_cliques(graph, current_clique, candidates, excluded):
     
     return result
 
+
 def find_largest_clique(graph):
     """
     Find the largest set of computers that are all connected to each other.
@@ -276,6 +277,7 @@ def find_largest_clique(graph):
     # Find the largest clique
     largest_clique = max(cliques, key=len)
     return largest_clique
+
 
 def part2(content):
     """
