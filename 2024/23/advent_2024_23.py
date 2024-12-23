@@ -112,7 +112,7 @@ STATUS_COLORS = {
 TEST_SOLUTIONS = {
     ".test_I.txt": {
         "part1": 7,
-        "part2": 'N/A',
+        "part2": 'co,de,ka,ta',
     },
     "input_I.txt": {
         "part1": 1119,
@@ -218,22 +218,93 @@ def part1(content):
     }
 
 
+
+
+
+
+def is_clique(graph, nodes):
+    """Check if all nodes in the set are connected to each other"""
+    for node in nodes:
+        # For each node, check if it's connected to all other nodes
+        for other in nodes:
+            if other != node and other not in graph[node]:
+                return False
+    return True
+
+def find_maximal_cliques(graph, current_clique, candidates, excluded):
+    """Find all maximal cliques using Bron-Kerbosch algorithm with pivoting"""
+    if not candidates and not excluded:
+        return [current_clique]
+    
+    # Choose a pivot vertex to optimize
+    pivot = None
+    max_connections = -1
+    for vertex in candidates.union(excluded):
+        connections = len(graph[vertex])
+        if connections > max_connections:
+            max_connections = connections
+            pivot = vertex
+            
+    pivot_neighbors = graph[pivot] if pivot else set()
+    
+    result = []
+    candidates_copy = candidates.copy()
+    for v in candidates - pivot_neighbors:
+        new_candidates = candidates.intersection(graph[v])
+        new_excluded = excluded.intersection(graph[v])
+        new_result = find_maximal_cliques(
+            graph,
+            current_clique.union({v}),
+            new_candidates,
+            new_excluded
+        )
+        result.extend(new_result)
+        candidates_copy.remove(v)
+        excluded.add(v)
+    
+    return result
+
+def find_largest_clique(graph):
+    """
+    Find the largest set of computers that are all connected to each other.
+    Returns the set of computer names in the largest clique.
+    """
+    # Start with all nodes as candidates
+    all_nodes = set(graph.keys())
+    cliques = find_maximal_cliques(graph, set(), all_nodes, set())
+    
+    # Find the largest clique
+    largest_clique = max(cliques, key=len)
+    return largest_clique
+
 def part2(content):
     """
-    Solution for Part 2
+    Find the largest set of fully connected computers and return their names
+    as a comma-separated string in alphabetical order
     """
     start_time = time.time()
     
-    # Parse input
-    data = parse_input(content)
+    # Parse input and build graph
+    connections = parse_input(content)
+    graph = build_graph(connections)
     
-    # Your solution logic here
-    result = 0
+    # Find the largest clique
+    largest_clique = find_largest_clique(graph)
+    
+    # Sort the computer names alphabetically and join with commas
+    result = ",".join(sorted(largest_clique))
     
     return {
         "value": result,
         "execution_time": time.time() - start_time
     }
+
+
+
+
+
+
+
 
 
 def determine_test_status(result, expected):
