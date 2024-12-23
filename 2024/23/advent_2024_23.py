@@ -1,5 +1,69 @@
 '''
+--- Day 23: LAN Party ---
+As The Historians wander around a secure area at Easter Bunny HQ, you come across posters for a LAN party scheduled for today! Maybe you can find it; you connect to a nearby datalink port and download a map of the local network (your puzzle input).
 
+The network map provides a list of every connection between two computers. For example:
+
+kh-tc
+qp-kh
+de-cg
+ka-co
+yn-aq
+qp-ub
+cg-tb
+vc-aq
+tb-ka
+wh-tc
+yn-cg
+kh-ub
+ta-co
+de-co
+tc-td
+tb-wq
+wh-td
+ta-ka
+td-qp
+aq-cg
+wq-ub
+ub-vc
+de-ta
+wq-aq
+wq-vc
+wh-yn
+ka-de
+kh-ta
+co-tc
+wh-qp
+tb-vc
+td-yn
+Each line of text in the network map represents a single connection; the line kh-tc represents a connection between the computer named kh and the computer named tc. Connections aren't directional; tc-kh would mean exactly the same thing.
+
+LAN parties typically involve multiplayer games, so maybe you can locate it by finding groups of connected computers. Start by looking for sets of three computers where each computer in the set is connected to the other two computers.
+
+In this example, there are 12 such sets of three inter-connected computers:
+
+aq,cg,yn
+aq,vc,wq
+co,de,ka
+co,de,ta
+co,ka,ta
+de,ka,ta
+kh,qp,ub
+qp,td,wh
+tb,vc,wq
+tc,td,wh
+td,wh,yn
+ub,vc,wq
+If the Chief Historian is here, and he's at the LAN party, it would be best to know that right away. You're pretty sure his computer's name starts with t, so consider only sets of three computers where at least one computer's name starts with t. That narrows the list down to 7 sets of three inter-connected computers:
+
+co,de,ta
+co,ka,ta
+de,ka,ta
+qp,td,wh
+tb,vc,wq
+tc,td,wh
+td,wh,yn
+Find all the sets of three inter-connected computers. How many contain at least one computer with a name that starts with t?
 
 
 '''
@@ -32,7 +96,7 @@ STATUS_COLORS = {
 
 TEST_SOLUTIONS = {
     ".test_I.txt": {
-        "part1": 'N/A',
+        "part1": 7,
         "part2": 'N/A',
     },
     "input_I.txt": {
@@ -51,30 +115,74 @@ def print_header(filename, part):
     print(f"{Fore.CYAN}{'='*80}\n")
 
 def parse_input(content):
-    """
-    Parse the input content removing empty lines and whitespace
-    """
-    lines = content.splitlines()  # split by newlines
+    """Parse the input content removing empty lines and whitespace"""
+    lines = content.splitlines()
     result = []
-    
     for line in lines:
-        clean_line = line.strip()  # remove whitespace at start and end
-        if clean_line:  # if line is not empty
+        clean_line = line.strip()
+        if clean_line and '-' in clean_line:  # Only keep lines with connections
             result.append(clean_line)
-            
     return result
+
+def build_graph(connections):
+    """Build an adjacency dictionary from the connections"""
+    graph = {}
+    for connection in connections:
+        a, b = connection.split('-')
+        if a not in graph:
+            graph[a] = set()
+        if b not in graph:
+            graph[b] = set()
+        graph[a].add(b)
+        graph[b].add(a)
+    return graph
+
+def find_triplets(graph):
+    """Find all sets of three fully interconnected computers"""
+    computers = sorted(graph.keys())
+    triplets = set()
+    
+    for i in range(len(computers)):
+        for j in range(i + 1, len(computers)):
+            # Check if first two computers are connected
+            if computers[j] not in graph[computers[i]]:
+                continue
+                
+            for k in range(j + 1, len(computers)):
+                # Check if third computer is connected to both others
+                if (computers[k] in graph[computers[i]] and 
+                    computers[k] in graph[computers[j]]):
+                    # Sort to ensure consistent ordering
+                    triplet = tuple(sorted([computers[i], computers[j], computers[k]]))
+                    triplets.add(triplet)
+                    
+    return triplets
+
+def count_t_triplets(triplets):
+    """Count triplets containing at least one computer starting with 't'"""
+    count = 0
+    for triplet in triplets:
+        if any(comp.startswith('t') for comp in triplet):
+            count += 1
+    return count
 
 def part1(content):
     """
     Solution for Part 1
+    Find all sets of three inter-connected computers and count those
+    containing at least one computer with a name starting with 't'
     """
     start_time = time.time()
     
-    # Parse input
-    data = parse_input(content)
+    # Parse input and build graph
+    connections = parse_input(content)
+    graph = build_graph(connections)
     
-    # Your solution logic here
-    result = 0
+    # Find all triplets
+    triplets = find_triplets(graph)
+    
+    # Count triplets with 't' computers
+    result = count_t_triplets(triplets)
     
     return {
         "value": result,
