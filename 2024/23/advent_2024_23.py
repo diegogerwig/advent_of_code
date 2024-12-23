@@ -218,12 +218,10 @@ def part1(content):
     }
 
 
-
-
-
-
 def is_clique(graph, nodes):
-    """Check if all nodes in the set are connected to each other"""
+    """
+    Check if all nodes in the set are connected to each other
+    """
     for node in nodes:
         # For each node, check if it's connected to all other nodes
         for other in nodes:
@@ -300,10 +298,6 @@ def part2(content):
         "value": result,
         "execution_time": time.time() - start_time
     }
-
-
-
-
 
 
 
