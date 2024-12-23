@@ -100,10 +100,11 @@ TEST_SOLUTIONS = {
         "part2": 'N/A',
     },
     "input_I.txt": {
-        "part1": 'N/A',
+        "part1": 1119,
         "part2": 'N/A',
     }
 }
+
 
 def print_header(filename, part):
     """
@@ -114,8 +115,11 @@ def print_header(filename, part):
     print(f"{Fore.CYAN}Part {part}")
     print(f"{Fore.CYAN}{'='*80}\n")
 
+
 def parse_input(content):
-    """Parse the input content removing empty lines and whitespace"""
+    """
+    Parse the input content removing empty lines and whitespace
+    """
     lines = content.splitlines()
     result = []
     for line in lines:
@@ -124,8 +128,11 @@ def parse_input(content):
             result.append(clean_line)
     return result
 
+
 def build_graph(connections):
-    """Build an adjacency dictionary from the connections"""
+    """
+    Build an adjacency dictionary from the connections
+    """
     graph = {}
     for connection in connections:
         a, b = connection.split('-')
@@ -137,8 +144,11 @@ def build_graph(connections):
         graph[b].add(a)
     return graph
 
+
 def find_triplets(graph):
-    """Find all sets of three fully interconnected computers"""
+    """
+    Find all sets of three fully interconnected computers
+    """
     computers = sorted(graph.keys())
     triplets = set()
     
@@ -158,17 +168,20 @@ def find_triplets(graph):
                     
     return triplets
 
+
 def count_t_triplets(triplets):
-    """Count triplets containing at least one computer starting with 't'"""
+    """
+    Count triplets containing at least one computer starting with 't'
+    """
     count = 0
     for triplet in triplets:
         if any(comp.startswith('t') for comp in triplet):
             count += 1
     return count
 
+
 def part1(content):
     """
-    Solution for Part 1
     Find all sets of three inter-connected computers and count those
     containing at least one computer with a name starting with 't'
     """
@@ -189,6 +202,7 @@ def part1(content):
         "execution_time": time.time() - start_time
     }
 
+
 def part2(content):
     """
     Solution for Part 2
@@ -206,6 +220,7 @@ def part2(content):
         "execution_time": time.time() - start_time
     }
 
+
 def determine_test_status(result, expected):
     """
     Determine the test status based on the result and expected value.
@@ -221,11 +236,13 @@ def determine_test_status(result, expected):
         return TEST_STATUS["PASSED"]
     return TEST_STATUS["FAILED"]
 
+
 def get_status_color(status):
     """
     Get the appropriate color for each status
     """
     return STATUS_COLORS.get(status, Fore.WHITE)
+
 
 def process_file(filepath):
     """
@@ -266,8 +283,11 @@ def process_file(filepath):
     except Exception as e:
         return False, str(e)
 
+
 def process_directory(input_dir="./input/"):
-    """Process all files in the specified directory"""
+    """
+    Process all files in the specified directory
+    """
     if not os.path.exists(input_dir):
         raise FileNotFoundError(f"Input directory '{input_dir}' does not exist.")
     
@@ -285,8 +305,11 @@ def process_directory(input_dir="./input/"):
     
     return results
 
+
 def print_results(results):
-    """Print results with enhanced status display"""
+    """
+    Print results with enhanced status display
+    """
     print(f"\n{Fore.CYAN}{'='*80}")
     print(f"{Fore.CYAN}Final Results")
     print(f"{Fore.CYAN}{'='*80}\n")
@@ -310,6 +333,7 @@ def print_results(results):
         else:
             print(f"  {Fore.RED}Error - {result}")
 
+
 def main():
     try:
         input_dir = "./input/"
@@ -318,6 +342,7 @@ def main():
     except Exception as e:
         print(f"{Fore.RED}Error: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
