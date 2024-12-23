@@ -231,7 +231,9 @@ def is_conn(graph, nodes):
 
 
 def find_maximal_conns(graph, current_conn, candidates, excluded):
-    """Find all maximal conns using Bron-Kerbosch algorithm with pivoting"""
+    """
+    Find all maximal conns using Bron-Kerbosch algorithm with pivoting
+    """
     if not candidates and not excluded:
         return [current_conn]
     
