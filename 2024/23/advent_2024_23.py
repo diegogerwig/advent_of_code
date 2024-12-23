@@ -218,7 +218,7 @@ def part1(content):
     }
 
 
-def is_clique(graph, nodes):
+def is_conn(graph, nodes):
     """
     Check if all nodes in the set are connected to each other
     """
@@ -229,10 +229,11 @@ def is_clique(graph, nodes):
                 return False
     return True
 
-def find_maximal_cliques(graph, current_clique, candidates, excluded):
-    """Find all maximal cliques using Bron-Kerbosch algorithm with pivoting"""
+
+def find_maximal_conns(graph, current_conn, candidates, excluded):
+    """Find all maximal conns using Bron-Kerbosch algorithm with pivoting"""
     if not candidates and not excluded:
-        return [current_clique]
+        return [current_conn]
     
     # Choose a pivot vertex to optimize
     pivot = None
@@ -250,9 +251,9 @@ def find_maximal_cliques(graph, current_clique, candidates, excluded):
     for v in candidates - pivot_neighbors:
         new_candidates = candidates.intersection(graph[v])
         new_excluded = excluded.intersection(graph[v])
-        new_result = find_maximal_cliques(
+        new_result = find_maximal_conns(
             graph,
-            current_clique.union({v}),
+            current_conn.union({v}),
             new_candidates,
             new_excluded
         )
@@ -263,18 +264,19 @@ def find_maximal_cliques(graph, current_clique, candidates, excluded):
     return result
 
 
-def find_largest_clique(graph):
+def find_largest_conn(graph):
     """
     Find the largest set of computers that are all connected to each other.
-    Returns the set of computer names in the largest clique.
+    Returns the set of computer names in the largest conn.
     """
     # Start with all nodes as candidates
     all_nodes = set(graph.keys())
-    cliques = find_maximal_cliques(graph, set(), all_nodes, set())
+    conns = find_maximal_conns(graph, set(), all_nodes, set())
     
-    # Find the largest clique
-    largest_clique = max(cliques, key=len)
-    return largest_clique
+    # Find the largest conn
+    largest_conn = max(conns, key=len)
+
+    return largest_conn
 
 
 def part2(content):
@@ -288,19 +290,16 @@ def part2(content):
     connections = parse_input(content)
     graph = build_graph(connections)
     
-    # Find the largest clique
-    largest_clique = find_largest_clique(graph)
+    # Find the largest conn
+    largest_conn = find_largest_conn(graph)
     
     # Sort the computer names alphabetically and join with commas
-    result = ",".join(sorted(largest_clique))
+    result = ",".join(sorted(largest_conn))
     
     return {
         "value": result,
         "execution_time": time.time() - start_time
     }
-
-
-
 
 
 def determine_test_status(result, expected):
