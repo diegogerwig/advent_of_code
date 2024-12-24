@@ -290,7 +290,13 @@ def part1(content):
         binary = bit + binary
     
     # Convert binary to decimal
-    result = int(binary, 2) if binary else 0
+    # Check if we have any binary digits
+    if binary == '':
+        result = 0
+    else:
+        # Convert binary string to decimal number
+        # The 2 in int(binary, 2) means "convert from base 2"
+        result = int(binary, 2)
     
     return {
         "value": result,
