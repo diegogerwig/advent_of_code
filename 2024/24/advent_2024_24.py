@@ -189,22 +189,121 @@ def parse_input(content):
             
     return result
 
+
+
+
+
+
+
+
 def part1(content):
     """
     Solution for Part 1
     """
     start_time = time.time()
     
+    # Initialize variables
+    wires = {}  # Store wire values
+    gates = []  # Store gate operations
+    
     # Parse input
     data = parse_input(content)
     
-    # Your solution logic here
-    result = 0
+    # Process each line
+    for line in data:
+        if ':' in line:  # Initial wire value
+            wire, value = line.split(':')
+            wires[wire.strip()] = bool(int(value.strip()))
+        else:  # Gate definition
+            inputs_str, output = line.split(' -> ')
+            inputs = inputs_str.split()
+            
+            # Determine gate type
+            if 'AND' in inputs:
+                gate_type = 'AND'
+                inputs.remove('AND')
+            elif 'OR' in inputs:
+                gate_type = 'OR'
+                inputs.remove('OR')
+            elif 'XOR' in inputs:
+                gate_type = 'XOR'
+                inputs.remove('XOR')
+            else:
+                raise ValueError(f"Unknown gate type in: {line}")
+                
+            gates.append((inputs, gate_type, output.strip()))
+    
+    # Simulate gates until no more changes
+    while True:
+        changes = 0
+        for inputs, gate_type, output in gates:
+            if output not in wires:  # Only evaluate if output not yet determined
+                # Get input values
+                input_vals = []
+                for inp in inputs:
+                    if inp not in wires:
+                        input_vals = None
+                        break
+                    input_vals.append(wires[inp])
+                
+                if input_vals is None:
+                    continue
+                
+                # Evaluate gate
+                if gate_type == 'AND':
+                    result = input_vals[0] and input_vals[1]
+                elif gate_type == 'OR':
+                    result = input_vals[0] or input_vals[1]
+                elif gate_type == 'XOR':
+                    result = input_vals[0] != input_vals[1]
+                
+                wires[output] = result
+                changes += 1
+        
+        if changes == 0:  # If no changes made, we're done
+            break
+    
+    # Get all z wires and sort them numerically by their index
+    z_wires = []
+    for wire in wires:
+        if wire.startswith('z'):
+            number = int(wire[1:])  # Extract number after 'z'
+            z_wires.append((number, wire))
+    z_wires.sort()  # Sort by number
+    
+    # Convert to binary string (1s and 0s), from least to most significant bit
+    # Initialize empty binary string
+    binary = ''
+
+    # Loop through each wire (using normal variable names)
+    for wire_info in z_wires:
+        wire_name = wire_info[1]  # Get the wire name from the tuple
+        wire_value = wires[wire_name]  # Get the wire's boolean value
+        
+        # Convert boolean to '1' or '0' using regular if statement
+        if wire_value == True:
+            bit = '1'
+        else:
+            bit = '0'
+            
+        # Add the bit to the start of the string (because least significant bit comes first)
+        binary = bit + binary
+    
+    # Convert binary to decimal
+    result = int(binary, 2) if binary else 0
     
     return {
         "value": result,
         "execution_time": time.time() - start_time
     }
+
+
+
+
+
+
+
+
 
 def part2(content):
     """
