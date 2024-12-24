@@ -376,68 +376,8 @@ def part2(content):
     """Solution for Part 2 using circuit simulation"""
     start_time = time.time()
     
-    # Operations definitions
-    ops = {"AND": 0, "OR": 1, "XOR": 2}
-    funcs = [lambda a, b: a & b, lambda a, b: a | b, lambda a, b: a ^ b]
-
-    def solve(wires, todos):
-        while todos:
-            new = []
-            for a, op, b, c in todos:
-                if a in wires and b in wires:
-                    wires[c] = funcs[ops[op]](wires[a], wires[b])
-                else:
-                    new.append((a, op, b, c))
-            if len(new) == len(todos):  # If no progress was made
-                break
-            todos = new
-
-    def zs_as_int(wires):
-        zs = [(k, v) for k, v in wires.items() if k.startswith('z')]
-        zs = sorted(zs, reverse=True)
-        zs = [z[1] for z in zs]
-        return int("".join(map(str, zs)), 2)
-
-    # Parse input
-    data = content.strip().split('\n\n')
     
-    # Parse wires section
-    wires = {}
-    for line in data[0].split('\n'):
-        wire, val = line.strip().split(': ')
-        wires[wire] = int(val)
-    
-    # Parse operations section
-    todos = []
-    for line in data[1].split('\n'):
-        parts = line.strip().split()
-        if len(parts) == 5:  # Normal format: a OP b -> c
-            a, op, b, _, c = parts
-            todos.append((a, op, b, c))
-
-    # Check if this is the test case with the example swaps
-    has_example_wires = any(wire in {'aaa', 'bbb', 'ccc', 'eee', 'ooo', 'z24', 'z99'} 
-                           for wire in wires.keys())
-    
-    if has_example_wires:
-        # Use example swaps from the problem description
-        swaps = [
-            "aaa", "eee",
-            "ooo", "z99",
-            "bbb", "ccc",
-            "aoc", "z24"
-        ]
-    else:
-        # Use swaps found from analysis of input_I.txt
-        swaps = [
-            "z07", "gmt",
-            "z18", "dmn",
-            "z35", "cfk",
-            "cbj", "qjj"
-        ]
-    
-    # Return the sorted, comma-joined list of swapped wires
-    result = ','.join(sorted(swaps))
+    result = 0
     
     return {
         "value": result,
