@@ -227,6 +227,7 @@ TEST_SOLUTIONS = {
     }
 }
 
+
 def print_header(filename, part):
     """
     Simple header printing function
@@ -235,6 +236,7 @@ def print_header(filename, part):
     print(f"{Fore.CYAN}Processing file: {Fore.YELLOW}{filename}")
     print(f"{Fore.CYAN}Part {part}")
     print(f"{Fore.CYAN}{'='*80}\n")
+
 
 def parse_input(content):
     """
@@ -249,12 +251,6 @@ def parse_input(content):
             result.append(clean_line)
             
     return result
-
-
-
-
-
-
 
 
 def part1(content):
@@ -389,6 +385,9 @@ def part2(content):
         "execution_time": time.time() - start_time
     }
 
+
+
+
 def determine_test_status(result, expected):
     """
     Determine the test status based on the result and expected value.
@@ -404,11 +403,13 @@ def determine_test_status(result, expected):
         return TEST_STATUS["PASSED"]
     return TEST_STATUS["FAILED"]
 
+
 def get_status_color(status):
     """
     Get the appropriate color for each status
     """
     return STATUS_COLORS.get(status, Fore.WHITE)
+
 
 def process_file(filepath):
     """
@@ -449,6 +450,7 @@ def process_file(filepath):
     except Exception as e:
         return False, str(e)
 
+
 def process_directory(input_dir="./input/"):
     """Process all files in the specified directory"""
     if not os.path.exists(input_dir):
@@ -467,6 +469,7 @@ def process_directory(input_dir="./input/"):
         results[file] = (success, result)
     
     return results
+
 
 def print_results(results):
     """Print results with enhanced status display"""
@@ -493,6 +496,7 @@ def print_results(results):
         else:
             print(f"  {Fore.RED}Error - {result}")
 
+
 def main():
     try:
         input_dir = "./input/"
@@ -501,6 +505,7 @@ def main():
     except Exception as e:
         print(f"{Fore.RED}Error: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
