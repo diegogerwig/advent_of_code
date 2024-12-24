@@ -153,6 +153,10 @@ STATUS_COLORS = {
 
 TEST_SOLUTIONS = {
     ".test_I.txt": {
+        "part1": 4,
+        "part2": 'N/A',
+    },
+    ".test_II.txt": {
         "part1": 2024,
         "part2": 'N/A',
     },
