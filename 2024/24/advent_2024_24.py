@@ -369,9 +369,6 @@ def part1(content):
 
 
 
-
-
-
 def part2(content):
     """Solution for Part 2 using circuit simulation"""
     start_time = time.time()
@@ -383,8 +380,6 @@ def part2(content):
         "value": result,
         "execution_time": time.time() - start_time
     }
-
-
 
 
 
