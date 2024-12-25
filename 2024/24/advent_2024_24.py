@@ -262,6 +262,61 @@ def parse_input(content):
     return result
 
 
+def create_circuit_graph(gates, filename="logic_circuit_part1", highlight_nodes=None):
+    graph = Digraph(format="png")
+    graph.attr(rankdir="TB", bgcolor='lightgray')
+    
+    if highlight_nodes is None:
+        highlight_nodes = set()
+    
+    is_part2 = len(gates[0]) == 4
+    
+    # Colors for different types
+    gate_colors = {
+        'AND': '#FF9999',  # Light red
+        'OR': '#99FF99',   # Light green
+        'XOR': '#9999FF'   # Light blue
+    }
+    
+    for gate in gates:
+        if is_part2:
+            in1, op, in2, out = gate
+            inputs = [in1, in2]
+        else:
+            inputs, op, out = gate
+            
+        gate_id = f"{inputs[0]}_{inputs[1]}_{op}_{out}"
+        
+        # Input nodes
+        for inp in inputs:
+            node_color = "red" if inp in highlight_nodes else "#FFB366" if inp.startswith('x') else "#66B2FF"
+            graph.node(inp, inp, shape="ellipse", color="black", style="filled", fillcolor=node_color)
+        
+        # Gate node
+        graph.node(gate_id, op, shape="box", style="filled", fillcolor=gate_colors.get(op, 'white'))
+        
+        # Output node
+        node_color = "red" if out in highlight_nodes else "#FF99FF" if out.startswith('z') else "white"
+        graph.node(out, out, shape="ellipse", color="black", style="filled", fillcolor=node_color)
+        
+        # Edges
+        for inp in inputs:
+            graph.edge(inp, gate_id)
+        graph.edge(gate_id, out)
+    
+    # Add legend
+    with graph.subgraph(name='cluster_legend') as legend:
+        legend.attr(label='Legend', bgcolor='white')
+        legend.node('x_legend', 'X inputs', shape="ellipse", style="filled", fillcolor="#FFB366")
+        legend.node('y_legend', 'Y inputs', shape="ellipse", style="filled", fillcolor="#66B2FF")
+        legend.node('z_legend', 'Z outputs', shape="ellipse", style="filled", fillcolor="#FF99FF")
+        legend.node('and_legend', 'AND', shape="box", style="filled", fillcolor=gate_colors['AND'])
+        legend.node('or_legend', 'OR', shape="box", style="filled", fillcolor=gate_colors['OR'])
+        legend.node('xor_legend', 'XOR', shape="box", style="filled", fillcolor=gate_colors['XOR'])
+    
+    graph.render(filename, cleanup=True)
+
+
 def part1(content):
     """
     Simulate the system of gates and wires to determine the decimal number output
@@ -299,6 +354,9 @@ def part1(content):
                 
             gates.append((inputs, gate_type, output.strip()))
     
+    # Create visualization
+    create_circuit_graph(gates)
+
     # Simulate gates until no more changes
     while True:
         changes = 0
@@ -415,6 +473,9 @@ def part2(content):
             for other_in1, other_op, other_in2, other_out in gates:
                 if (out == other_in1 or out == other_in2) and other_op == "OR":
                     erroneous_gates.add(out)
+
+    # Create visualization with highlighted erroneous gates
+    create_circuit_graph(gates, "logic_circuit_part2", erroneous_gates)
 
     result = ','.join(sorted(erroneous_gates))
     return {
