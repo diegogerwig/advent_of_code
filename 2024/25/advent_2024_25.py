@@ -102,7 +102,18 @@ So, in this example, the number of unique lock/key pairs that fit together witho
 
 Analyze your lock and key schematics. How many unique lock/key pairs fit together without overlapping in any column?
 
+--- Part Two ---
+You and The Historians crowd into the office, startling the Chief Historian awake! The Historians all take turns looking confused until one asks where he's been for the last few months.
 
+"I've been right here, working on this high-priority request from Santa! I think the only time I even stepped away was about a month ago when I went to grab a cup of coffee..."
+
+Just then, the Chief notices the time. "Oh no! I'm going to be late! I must have fallen asleep trying to put the finishing touches on this chronicle Santa requested, but now I don't have enough time to go visit the last 50 places on my list and complete the chronicle before Santa leaves! He said he needed it before tonight's sleigh launch."
+
+One of The Historians holds up the list they've been using this whole time to keep track of where they've been searching. Next to each place you all visited, they checked off that place with a star. Other Historians hold up their own notes they took on the journey; as The Historians, how could they resist writing everything down while visiting all those historically significant places?
+
+The Chief's eyes get wide. "With all this, we might just have enough time to finish the chronicle! Santa said he wanted it wrapped up with a bow, so I'll call down to the wrapping department and... hey, could you bring it up to Santa? I'll need to be in my seat to watch the sleigh launch by then."
+
+You nod, and The Historians quickly work to collect their notes into the final set of pages for the chronicle.
 '''
 
 
@@ -133,7 +144,7 @@ STATUS_COLORS = {
 
 TEST_SOLUTIONS = {
     ".test_I.txt": {
-        "part1": 'N/A',
+        "part1": 3,
         "part2": 'N/A',
     },
     "input_I.txt": {
@@ -151,53 +162,86 @@ def print_header(filename, part):
     print(f"{Fore.CYAN}Part {part}")
     print(f"{Fore.CYAN}{'='*80}\n")
 
+
 def parse_input(content):
     """
-    Parse the input content removing empty lines and whitespace
+    Parse input into lists of locks and keys
     """
-    lines = content.splitlines()  # split by newlines
-    result = []
+    lines = [line.strip() for line in content.splitlines() if line.strip()]
+    patterns = []
+    current = []
     
     for line in lines:
-        clean_line = line.strip()  # remove whitespace at start and end
-        if clean_line:  # if line is not empty
-            result.append(clean_line)
+        if line:
+            current.append(line)
+        if len(current) == 7:
+            patterns.append(current)
+            current = []
             
-    return result
+    # Split into locks and keys
+    locks = [p for p in patterns if p[0].startswith('#')]
+    keys = [p for p in patterns if p[0].startswith('.')]
+    return locks, keys
+
+
+def get_heights(pattern):
+    """
+    Convert pattern to list of heights
+    """
+    total_height = len(pattern)
+    heights = []
+    
+    for col in range(len(pattern[0])):
+        if pattern[0][col] == '#':  # Lock pattern (top-down)
+            height = 0
+            for row in range(total_height):
+                if pattern[row][col] == '#':
+                    height += 1
+                else:
+                    break
+        else:  # Key pattern (bottom-up)
+            height = 0
+            for row in range(total_height-1, -1, -1):
+                if pattern[row][col] == '#':
+                    height += 1
+                else:
+                    break
+        heights.append(height)
+    return heights
+
+
+def can_fit(lock_heights, key_heights):
+    """
+    Check if key fits lock without overlapping
+    """
+    i = 0
+    while i < len(lock_heights):
+        if lock_heights[i] + key_heights[i] > 7:
+            return False
+        i += 1
+    return True
+
 
 def part1(content):
-    """
-    Solution for Part 1
-    """
     start_time = time.time()
     
-    # Parse input
-    data = parse_input(content)
+    locks, keys = parse_input(content)
+    lock_heights = [get_heights(lock) for lock in locks]
+    key_heights = [get_heights(key) for key in keys]
     
-    # Your solution logic here
-    result = 0
+    valid_pairs = 0
+    for lock in lock_heights:
+        for key in key_heights:
+            if can_fit(lock, key):
+                valid_pairs += 1
     
+    execution_time = time.time() - start_time   
+
     return {
-        "value": result,
-        "execution_time": time.time() - start_time
+        "value": valid_pairs, 
+        "execution_time": execution_time
     }
 
-def part2(content):
-    """
-    Solution for Part 2
-    """
-    start_time = time.time()
-    
-    # Parse input
-    data = parse_input(content)
-    
-    # Your solution logic here
-    result = 0
-    
-    return {
-        "value": result,
-        "execution_time": time.time() - start_time
-    }
 
 def determine_test_status(result, expected):
     """
@@ -214,11 +258,13 @@ def determine_test_status(result, expected):
         return TEST_STATUS["PASSED"]
     return TEST_STATUS["FAILED"]
 
+
 def get_status_color(status):
     """
     Get the appropriate color for each status
     """
     return STATUS_COLORS.get(status, Fore.WHITE)
+
 
 def process_file(filepath):
     """
@@ -235,9 +281,6 @@ def process_file(filepath):
             print_header(filename, 1)
             part1_result = part1(content)
             
-            print_header(filename, 2)
-            part2_result = part2(content)
-            
             # Get test solutions if available
             test_solution = TEST_SOLUTIONS.get(filename, {})
             
@@ -246,18 +289,15 @@ def process_file(filepath):
                 part1_result, 
                 test_solution.get("part1", 0)
             )
-            part2_result["status"] = determine_test_status(
-                part2_result,
-                test_solution.get("part2", 0)
-            )
+
             
             return True, {
                 "part1": part1_result,
-                "part2": part2_result
             }
             
     except Exception as e:
         return False, str(e)
+
 
 def process_directory(input_dir="./input/"):
     """Process all files in the specified directory"""
@@ -277,6 +317,7 @@ def process_directory(input_dir="./input/"):
         results[file] = (success, result)
     
     return results
+
 
 def print_results(results):
     """Print results with enhanced status display"""
@@ -303,6 +344,7 @@ def print_results(results):
         else:
             print(f"  {Fore.RED}Error - {result}")
 
+
 def main():
     try:
         input_dir = "./input/"
@@ -311,6 +353,7 @@ def main():
     except Exception as e:
         print(f"{Fore.RED}Error: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
