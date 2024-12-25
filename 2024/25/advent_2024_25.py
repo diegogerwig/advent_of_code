@@ -179,8 +179,14 @@ def parse_input(content):
             current = []
             
     # Split into locks and keys
-    locks = [p for p in patterns if p[0].startswith('#')]
-    keys = [p for p in patterns if p[0].startswith('.')]
+    locks = []
+    keys = []
+    for p in patterns:
+        if p[0].startswith('#'):
+            locks.append(p)
+        else:
+            keys.append(p)
+            
     return locks, keys
 
 

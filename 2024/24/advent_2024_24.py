@@ -227,7 +227,7 @@ TEST_SOLUTIONS = {
     },
     "input_I.txt": {
         "part1": 55920211035878,
-        "part2": 'N/A',
+        "part2": 'btb,cmv,mwp,rdg,rmj,z17,z23,z30',
     }
 }
 
