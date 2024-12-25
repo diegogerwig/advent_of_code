@@ -194,6 +194,11 @@ import os
 from colorama import init, Fore
 import time
 
+import typer
+app = typer.Typer()
+
+from graphviz import Digraph
+
 init(autoreset=True)
 
 CURRENT_FILEPATH = ""
@@ -259,7 +264,7 @@ def parse_input(content):
 
 def part1(content):
     """
-    Solution for Part 1
+    Simulate the system of gates and wires to determine the decimal number output
     """
     start_time = time.time()
     
@@ -365,23 +370,57 @@ def part1(content):
     }
 
 
-
-
-
-
 def part2(content):
-    """Solution for Part 2 using circuit simulation"""
+    """
+    Simulate the system of gates and wires to determine the names of the wires that are erroneously set
+    """
     start_time = time.time()
+    data = parse_input(content)
     
+    # Parse initial wires and gates
+    wires = {}
+    gates = []
     
-    result = 0
-    
+    for line in data:
+        if ':' in line:
+            wire, value = line.split(':')
+            wires[wire.strip()] = int(value.strip())
+        elif '->' in line:
+            parts = line.split(' ')
+            op_index = -1
+            for i, part in enumerate(parts):
+                if part in ['AND', 'OR', 'XOR']:
+                    op_index = i
+                    break
+            if op_index != -1:
+                gates.append((parts[op_index-1], parts[op_index], parts[op_index+1], parts[op_index+3]))
+
+    erroneous_gates = set()
+    for in1, op, in2, out in gates:
+        if op != "XOR" and out[0] == "z" and out != "z45":
+            erroneous_gates.add(out)
+        
+        if (op == "XOR" and 
+            in1[0] not in ["x", "y"] and 
+            in2[0] not in ["x", "y"] and 
+            out[0] not in ["z"]):
+            erroneous_gates.add(out)
+
+        if op == "AND" and "x00" not in [in1, in2]:
+            for other_in1, other_op, other_in2, other_out in gates:
+                if (out == other_in1 or out == other_in2) and other_op != "OR":
+                    erroneous_gates.add(out)
+
+        if op == "XOR":
+            for other_in1, other_op, other_in2, other_out in gates:
+                if (out == other_in1 or out == other_in2) and other_op == "OR":
+                    erroneous_gates.add(out)
+
+    result = ','.join(sorted(erroneous_gates))
     return {
         "value": result,
         "execution_time": time.time() - start_time
     }
-
-
 
 
 def determine_test_status(result, expected):
@@ -492,7 +531,7 @@ def print_results(results):
         else:
             print(f"  {Fore.RED}Error - {result}")
 
-
+@app.command()
 def main():
     try:
         input_dir = "./input/"
@@ -504,4 +543,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    app()   
+    # main()
