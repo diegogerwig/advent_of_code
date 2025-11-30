@@ -2,7 +2,7 @@ import requests
 import os
 from pathlib import Path
 
-def download_input(day: int, year: int = 2024):
+def download_input(day: int, year: int = 2025):
     """Descarga el input del día específico desde AOC"""
     # Necesitas configurar tu session cookie de AOC
     session_cookie = os.getenv('AOC_SESSION')
@@ -17,7 +17,7 @@ def download_input(day: int, year: int = 2024):
     
     return response.text
 
-def ensure_input(day: int, year: int = 2024):
+def ensure_input(day: int, year: int = 2025):
     """Asegura que el archivo de input existe, si no lo descarga"""
     day_dir = Path(f"day{day:02d}")
     input_file = day_dir / "input.txt"
