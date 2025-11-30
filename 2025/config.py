@@ -80,6 +80,12 @@ class AOCConfig:
         return session, active
     
     @staticmethod
+    def get_session_cookie():
+        """Obtiene solo la cookie de sesión (sin información del entorno)"""
+        session, _ = AOCConfig.get_active_session()
+        return session
+    
+    @staticmethod
     def get_available_sessions():
         """Lista las sesiones disponibles"""
         sessions = {}
@@ -121,9 +127,9 @@ class AOCConfig:
             marker = "➤" if name == active else " "
             print(f"   {marker} {name}: {status}")
 
-# Funciones de conveniencia
+# Funciones de conveniencia - CORREGIDAS
 def get_session():
-    return AOCConfig.get_active_session()[0]
+    return AOCConfig.get_session_cookie()  # Solo retorna la cookie
 
 def get_year():
     return AOCConfig.get_year()

@@ -8,9 +8,9 @@ def download_input(day: int, year: int = None):
     if year is None:
         year = get_year()
         
-    session_cookie, active_session = get_session()
+    session_cookie = get_session()  # Ahora solo recibe la cookie
     
-    print(f"📥 Descargando input para día {day:02d} ({year}) - Sesión: {active_session}")
+    print(f"📥 Descargando input para día {day:02d} ({year})")
     
     url = f"https://adventofcode.com/{year}/day/{day}/input"
     headers = {'Cookie': f'session={session_cookie}'}
@@ -31,7 +31,7 @@ def ensure_input(day: int, year: int = None):
     if year is None:
         year = get_year()
         
-    day_dir = Path(f"{day:02d}")  # Cambiado de "day{day:02d}" a "{day:02d}"
+    day_dir = Path(f"{day:02d}")
     day_dir.mkdir(exist_ok=True)
     
     input_file = day_dir / "input.txt"
