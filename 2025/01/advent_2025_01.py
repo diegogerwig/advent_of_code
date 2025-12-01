@@ -92,11 +92,11 @@ def part1(content):
     }
 
 
-def part2_correct(content):
+def part2(content):
     """
-    CORRECT solution for Part 2.
-    Count zeros DURING rotation (excluding the final position if it's 0).
-    Also count zeros AFTER rotation (if final position is 0).
+    Solution for Part 2: Count how many times the dial points to 0 DURING OR AFTER any rotation.
+    - During: positions passed through excluding the final position
+    - After: if the final position is 0
     """
     start_time = time.time()
     
@@ -145,145 +145,6 @@ def part2_correct(content):
     }
 
 
-def part2_optimized(content):
-    """
-    Optimized version for large distances.
-    """
-    start_time = time.time()
-    
-    rotations = parse_input(content)
-    current_position = 50
-    total_zero_count = 0
-    
-    print(f"{Fore.YELLOW}Processing Part 2 (optimized) with {len(rotations)} rotations...")
-    
-    for direction, distance in rotations:
-        start_pos = current_position
-        
-        # Count zeros DURING rotation (excluding final position)
-        zeros_during = 0
-        
-        if direction == 'R':
-            if distance > 1:  # Need at least 2 steps to have positions during rotation
-                # We're checking positions: start_pos+1 to start_pos+distance-1
-                first_check = start_pos + 1
-                last_check = start_pos + distance - 1
-                
-                # Find first multiple of 100 in range
-                first_multiple = ((first_check + 99) // 100) * 100
-                
-                if first_multiple <= last_check:
-                    # Count multiples of 100 in the range
-                    zeros_during = 1 + (last_check - first_multiple) // 100
-            
-            current_position = (start_pos + distance) % 100
-            
-        else:  # 'L'
-            if distance > 1:
-                # We're checking positions: start_pos-1 down to start_pos-distance+1
-                # Equivalent to checking when (start_pos - step) % 100 == 0
-                # for step in range(1, distance)
-                
-                # First step that gives position 0
-                first_step = start_pos % 100
-                if first_step == 0:
-                    first_step = 100  # Next occurrence
-                
-                if first_step < distance:  # Note: < not <= because we exclude step=distance
-                    zeros_during = 1 + (distance - 1 - first_step) // 100
-            
-            current_position = (start_pos - distance) % 100
-        
-        # Count if ends at 0
-        if current_position == 0:
-            total_zero_count += 1
-        
-        total_zero_count += zeros_during
-    
-    return {
-        "value": total_zero_count,
-        "execution_time": time.time() - start_time
-    }
-
-
-def verify_example():
-    """
-    Manually verify the example from the problem
-    """
-    print(f"\n{Fore.CYAN}{'='*80}")
-    print(f"{Fore.CYAN}Verifying Example from Problem")
-    print(f"{Fore.CYAN}{'='*80}")
-    
-    example = """L68
-L30
-R48
-L5
-R60
-L55
-L1
-L99
-R14
-L82"""
-    
-    rotations = parse_input(example)
-    
-    # Expected from problem description:
-    # 1. L68: during=1, end=0
-    # 2. L30: during=0, end=0
-    # 3. R48: during=0, end=1 (ends at 0)
-    # 4. L5: during=0, end=0
-    # 5. R60: during=1, end=0
-    # 6. L55: during=0, end=1 (ends at 0)
-    # 7. L1: during=0, end=0
-    # 8. L99: during=0, end=1 (ends at 0)
-    # 9. R14: during=0, end=0
-    # 10. L82: during=1, end=0
-    
-    current = 50
-    total = 0
-    
-    print(f"Start: {current}")
-    
-    moves_info = [
-        ("L68", 1, 0), ("L30", 0, 0), ("R48", 0, 1), 
-        ("L5", 0, 0), ("R60", 1, 0), ("L55", 0, 1),
-        ("L1", 0, 0), ("L99", 0, 1), ("R14", 0, 0),
-        ("L82", 1, 0)
-    ]
-    
-    for i, ((direction, distance), (exp_during, exp_end)) in enumerate(zip(rotations, moves_info)):
-        start = current
-        during = 0
-        
-        # Count zeros during (excluding final position)
-        if direction == 'R':
-            for step in range(1, distance):
-                if (start + step) % 100 == 0:
-                    during += 1
-            current = (start + distance) % 100
-        else:
-            for step in range(1, distance):
-                if (start - step) % 100 == 0:
-                    during += 1
-            current = (start - distance) % 100
-        
-        end = 1 if current == 0 else 0
-        
-        # Verify
-        status = "✓" if during == exp_during and end == exp_end else "✗"
-        color = Fore.GREEN if status == "✓" else Fore.RED
-        
-        print(f"{color}{status} Move {i+1}: {direction}{distance}")
-        print(f"  From {start} to {current}")
-        print(f"  Zeros during: {during} (expected: {exp_during})")
-        print(f"  Ends at zero: {end} (expected: {exp_end})")
-        
-        total += during + end
-    
-    print(f"\n{Fore.YELLOW}Total zeros: {total} (expected: 6)")
-    return total == 6
-
-
 def determine_test_status(result, expected, filename, part_name):
     """
     Determine the test status based on the result and expected value.
@@ -323,8 +184,7 @@ def process_file(filepath):
             part1_result = part1(content)
             
             print_header(filename, 2)
-            # Use optimized version for efficiency
-            part2_result = part2_optimized(content)
+            part2_result = part2(content)
             
             # Get test solutions if available
             test_solution = TEST_SOLUTIONS.get(filename, {})
@@ -342,14 +202,6 @@ def process_file(filepath):
                 filename, 
                 "Part 2"
             )
-            
-            # Special verification for test_I.txt
-            if filename == "test_I.txt":
-                print(f"\n{Fore.YELLOW}Verifying example from problem...")
-                if verify_example():
-                    print(f"{Fore.GREEN}✓ Example verification passed!")
-                else:
-                    print(f"{Fore.RED}✗ Example verification failed!")
             
             return True, {
                 "part1": part1_result,
@@ -449,12 +301,6 @@ def main():
     Main function with improved error handling and command line support
     """
     try:
-        # Verify the example first
-        print(f"\n{Fore.CYAN}{'='*80}")
-        print(f"{Fore.CYAN}Initial Verification")
-        print(f"{Fore.CYAN}{'='*80}")
-        verify_example()
-        
         # Allow specifying input directory via command line
         input_dir = "./input/"
         if len(sys.argv) > 1:
