@@ -2,6 +2,7 @@
 
 '''
 --- Day 2: Gift Shop ---
+
 You get inside and take the elevator to its only other stop: the gift shop. "Thank you for visiting the North Pole!" gleefully exclaims a nearby sign. You aren't sure who is even allowed to visit the North Pole, but you know you can access the lobby through here, and from there you can access the rest of the North Pole base.
 
 As you make your way through the surprisingly extensive selection, one of the clerks recognizes you and asks for your help.
@@ -37,6 +38,7 @@ Adding up all the invalid IDs in this example produces 1227775554.
 What do you get if you add up all of the invalid IDs?
 
 --- Part Two ---
+
 The clerk quickly discovers that there are still invalid IDs in the ranges in your list. Maybe the young Elf was doing other silly patterns as well?
 
 Now, an ID is invalid if it is made only of some sequence of digits repeated at least twice. So, 12341234 (1234 two times), 123123123 (123 three times), 1212121212 (12 five times), and 1111111 (1 seven times) are all invalid IDs.
