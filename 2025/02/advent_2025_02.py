@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 '''
---- Day 2: Secret Entrance ---
+--- Day 2: Gift Shop ---
 
 '''
 
@@ -14,11 +14,11 @@ init(autoreset=True)
 
 TEST_SOLUTIONS = {
     "test_I.txt": {
-        "part1": 3,
-        "part2": "N/A",
+        "part1": 1227775554,
+        "part2": 4174379265,
     },
     "input_I.txt": {
-        "part1": "N/A", 
+        "part1": 29818212493, 
         "part2": "N/A",
     }
 }
@@ -48,99 +48,134 @@ def print_header(filename, part):
 
 def parse_input(content):
     """
-    Parse the input content into rotation commands.
-    Each line starts with L or R followed by a number.
+    Parse the input content into ID ranges.
+    Each range is separated by commas and has format start-end.
     """
-    rotations = []
-    lines = [line.strip() for line in content.splitlines() if line.strip()]
+    ranges = []
+    # Remove all whitespace and split by commas
+    content = content.replace('\n', '').replace(' ', '')
+    if not content:
+        return ranges
     
-    for line in lines:
-        direction = line[0]  # First character: L or R
-        distance = int(line[1:])  # Rest of the string is the number
-        rotations.append((direction, distance))
+    range_strings = content.split(',')
     
-    return rotations
+    for range_str in range_strings:
+        if range_str:
+            start, end = map(int, range_str.split('-'))
+            ranges.append((start, end))
+    
+    return ranges
+
+
+def is_repeated_number_part1(num):
+    """
+    Check if a number is made only of some sequence of digits repeated exactly twice.
+    Examples: 55 (5 twice), 6464 (64 twice), 123123 (123 twice)
+    """
+    num_str = str(num)
+    length = len(num_str)
+    
+    # A number must have even length to be a repetition of exactly 2 parts
+    if length % 2 != 0:
+        return False
+    
+    half_length = length // 2
+    first_half = num_str[:half_length]
+    second_half = num_str[half_length:]
+    
+    return first_half == second_half
+
+
+def is_repeated_number_part2(num):
+    """
+    Check if a number is made only of some sequence of digits repeated at least twice.
+    Examples: 
+    - 12341234 (1234 two times)
+    - 123123123 (123 three times)
+    - 1212121212 (12 five times)
+    - 1111111 (1 seven times)
+    """
+    num_str = str(num)
+    length = len(num_str)
+    
+    # Try all possible pattern lengths from 1 to len(num_str)//2
+    # The pattern must repeat at least twice, so max pattern length is length//2
+    for pattern_len in range(1, length // 2 + 1):
+        # Check if length is divisible by pattern_len
+        if length % pattern_len != 0:
+            continue
+            
+        pattern = num_str[:pattern_len]
+        repeats = length // pattern_len
+        
+        # Check if the entire number is the pattern repeated 'repeats' times
+        if num_str == pattern * repeats:
+            return True
+    
+    return False
 
 
 def part1(content):
     """
-    Solution for Part 1: Count how many times the dial points to 0 AFTER any rotation.
-    The dial starts at 50.
+    Solution for Part 1: Find all invalid IDs that appear in the given ranges.
+    Invalid IDs are numbers made of a sequence of digits repeated exactly twice.
     """
     start_time = time.time()
     
-    rotations = parse_input(content)
-    current_position = 50  # Starting position
-    zero_count = 0
+    ranges = parse_input(content)
+    total_sum = 0
     
-    print(f"{Fore.YELLOW}Processing Part 1 with {len(rotations)} rotations...")
+    print(f"{Fore.YELLOW}Processing Part 1 with {len(ranges)} ranges...")
     
-    for direction, distance in rotations:
-        # Apply rotation
-        if direction == 'R':
-            current_position = (current_position + distance) % 100
-        else:  # 'L'
-            current_position = (current_position - distance) % 100
+    for start, end in ranges:
+        print(f"{Fore.CYAN}  Processing range {start}-{end}")
+        invalid_in_range = 0
         
-        # Check if dial points to 0 after rotation
-        if current_position == 0:
-            zero_count += 1
+        for num in range(start, end + 1):
+            if is_repeated_number_part1(num):
+                total_sum += num
+                invalid_in_range += 1
+        
+        if invalid_in_range > 0:
+            print(f"{Fore.GREEN}    Found {invalid_in_range} invalid IDs in this range")
+    
+    print(f"{Fore.YELLOW}Total sum of invalid IDs: {total_sum}")
     
     return {
-        "value": zero_count,
+        "value": total_sum,
         "execution_time": time.time() - start_time
     }
 
 
 def part2(content):
     """
-    Solution for Part 2: Count how many times the dial points to 0 DURING OR AFTER any rotation.
-    - During: positions passed through excluding the final position
-    - After: if the final position is 0
+    Solution for Part 2: Find all invalid IDs using new rules.
+    Invalid IDs are numbers made of a sequence of digits repeated at least twice.
     """
     start_time = time.time()
     
-    rotations = parse_input(content)
-    current_position = 50
-    total_zero_count = 0
+    ranges = parse_input(content)
+    total_sum = 0
     
-    print(f"{Fore.YELLOW}Processing Part 2 with {len(rotations)} rotations...")
+    print(f"{Fore.YELLOW}Processing Part 2 with {len(ranges)} ranges...")
+    print(f"{Fore.YELLOW}New rules: sequence repeated at least twice (e.g., 111, 1212, 123123123)")
     
-    for direction, distance in rotations:
-        start_pos = current_position
+    for start, end in ranges:
+        print(f"{Fore.CYAN}  Processing range {start}-{end}")
+        invalid_in_range = 0
         
-        # Count zeros DURING the rotation (excluding final position)
-        zeros_during = 0
+        for num in range(start, end + 1):
+            if is_repeated_number_part2(num):
+                total_sum += num
+                invalid_in_range += 1
         
-        if direction == 'R':
-            # Moving right: check positions from start_pos+1 to start_pos+distance-1
-            # (exclude final position which we'll check separately)
-            for step in range(1, distance):  # Note: range(1, distance) excludes the final step
-                pos = (start_pos + step) % 100
-                if pos == 0:
-                    zeros_during += 1
-            
-            # Update position
-            current_position = (start_pos + distance) % 100
-            
-        else:  # 'L'
-            # Moving left: check positions from start_pos-1 to start_pos-distance+1
-            for step in range(1, distance):  # Exclude final position
-                pos = (start_pos - step) % 100
-                if pos == 0:
-                    zeros_during += 1
-            
-            # Update position
-            current_position = (start_pos - distance) % 100
-        
-        # Count if ends at 0 (AFTER rotation)
-        if current_position == 0:
-            total_zero_count += 1  # Count ending at 0
-        
-        total_zero_count += zeros_during  # Count zeros during rotation
+        if invalid_in_range > 0:
+            print(f"{Fore.GREEN}    Found {invalid_in_range} invalid IDs in this range")
+    
+    print(f"{Fore.YELLOW}Total sum of invalid IDs: {total_sum}")
     
     return {
-        "value": total_zero_count,
+        "value": total_sum,
         "execution_time": time.time() - start_time
     }
 
