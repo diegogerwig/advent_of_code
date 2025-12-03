@@ -57,7 +57,7 @@ What is the new total output joltage?
 import os
 import sys
 import time
-from colorama import init, Fore
+from colorama import init, Fore   
 
 init(autoreset=True)
 
