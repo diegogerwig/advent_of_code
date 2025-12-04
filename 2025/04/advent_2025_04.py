@@ -2,35 +2,182 @@
 
 '''
 --- Day 4: Printing Department ---
-You ride the escalator down to the printing department. They're clearly getting 
-ready for Christmas; they have lots of large rolls of paper everywhere, and 
-there's even a massive printer in the corner (to handle the really big print jobs).
 
-Decorating here will be easy: they can make their own decorations. What you really 
-need is a way to get further into the North Pole base while the elevators are offline.
+You ride the escalator down to the printing department. They're clearly getting ready for Christmas; they have lots of large rolls of paper everywhere, and there's even a massive printer in the corner (to handle the really big print jobs).
 
-"Actually, maybe we can help with that," one of the Elves replies when you ask for help. 
-"We're pretty sure there's a cafeteria on the other side of the back wall. If we could 
-break through the wall, you'd be able to keep moving. It's too bad all of our forklifts 
-are so busy moving those big rolls of paper around."
+Decorating here will be easy: they can make their own decorations. What you really need is a way to get further into the North Pole base while the elevators are offline.
 
-If you can optimize the work the forklifts are doing, maybe they would have time to spare 
-to break through the wall.
+"Actually, maybe we can help with that," one of the Elves replies when you ask for help. "We're pretty sure there's a cafeteria on the other side of the back wall. If we could break through the wall, you'd be able to keep moving. It's too bad all of our forklifts are so busy moving those big rolls of paper around."
 
-The rolls of paper (@) are arranged on a large grid; the Elves even have a helpful diagram 
-(your puzzle input) indicating where everything is located.
+If you can optimize the work the forklifts are doing, maybe they would have time to spare to break through the wall.
 
-The forklifts can only access a roll of paper if there are fewer than four rolls of paper 
-in the eight adjacent positions. If you can figure out which rolls of paper the forklifts 
-can access, they'll spend less time looking and more time breaking down the wall to the cafeteria.
+The rolls of paper (@) are arranged on a large grid; the Elves even have a helpful diagram (your puzzle input) indicating where everything is located.
 
-In the example, there are 13 rolls of paper that can be accessed by a forklift.
+For example:
+
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+The forklifts can only access a roll of paper if there are fewer than four rolls of paper in the eight adjacent positions. If you can figure out which rolls of paper the forklifts can access, they'll spend less time looking and more time breaking down the wall to the cafeteria.
+
+In this example, there are 13 rolls of paper that can be accessed by a forklift (marked with x):
+
+..xx.xx@x.
+x@@.@.@.@@
+@@@@@.x.@@
+@.@@@@..@.
+x@.@@@@.@x
+.@@@@@@@.@
+.@.@.@.@@@
+x.@@@.@@@@
+.@@@@@@@@.
+x.x.@@@.x.
+Consider your complete diagram of the paper roll locations. How many rolls of paper can be accessed by a forklift?
+
+
+--- Part Two ---
+
+Now, the Elves just need help accessing as much of the paper as they can.
+
+Once a roll of paper can be accessed by a forklift, it can be removed. Once a roll of paper is removed, the forklifts might be able to access more rolls of paper, which they might also be able to remove. How many total rolls of paper could the Elves remove if they keep repeating this process?
+
+Starting with the same example as above, here is one way you could remove as many rolls of paper as possible, using highlighted @ to indicate that a roll of paper is about to be removed, and using x to indicate that a roll of paper was just removed:
+
+Initial state:
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+
+Remove 13 rolls of paper:
+..xx.xx@x.
+x@@.@.@.@@
+@@@@@.x.@@
+@.@@@@..@.
+x@.@@@@.@x
+.@@@@@@@.@
+.@.@.@.@@@
+x.@@@.@@@@
+.@@@@@@@@.
+x.x.@@@.x.
+
+Remove 12 rolls of paper:
+.......x..
+.@@.x.x.@x
+x@@@@...@@
+x.@@@@..x.
+.@.@@@@.x.
+.x@@@@@@.x
+.x.@.@.@@@
+..@@@.@@@@
+.x@@@@@@@.
+....@@@...
+
+Remove 7 rolls of paper:
+..........
+.x@.....x.
+.@@@@...xx
+..@@@@....
+.x.@@@@...
+..@@@@@@..
+...@.@.@@x
+..@@@.@@@@
+..x@@@@@@.
+....@@@...
+
+Remove 5 rolls of paper:
+..........
+..x.......
+.x@@@.....
+..@@@@....
+...@@@@...
+..x@@@@@..
+...@.@.@@.
+..x@@.@@@x
+...@@@@@@.
+....@@@...
+
+Remove 2 rolls of paper:
+..........
+..........
+..x@@.....
+..@@@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@x.
+....@@@...
+
+Remove 1 roll of paper:
+..........
+..........
+...@@.....
+..x@@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@..
+....@@@...
+
+Remove 1 roll of paper:
+..........
+..........
+...x@.....
+...@@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@..
+....@@@...
+
+Remove 1 roll of paper:
+..........
+..........
+....x.....
+...@@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@..
+....@@@...
+
+Remove 1 roll of paper:
+..........
+..........
+..........
+...x@@....
+...@@@@...
+...@@@@@..
+...@.@.@@.
+...@@.@@@.
+...@@@@@..
+....@@@...
+Stop once no more rolls of paper are accessible by a forklift. In this example, a total of 43 rolls of paper can be removed.
+
+Start with your original diagram. How many rolls of paper in total can be removed by the Elves and their forklifts?
 '''
 
 import os
 import sys
 import time
-from colorama import init, Fore   
+from colorama import init, Fore    # type: ignore
 
 init(autoreset=True)
 
@@ -74,7 +221,7 @@ def parse_input(content):
     Each line represents a row of the grid with '.' and '@' characters.
     """
     lines = content.strip().split('\n')
-    return [line.strip() for line in lines if line.strip()]
+    return [list(line.strip()) for line in lines if line.strip()]
 
 
 def count_adjacent_rolls(grid, row, col):
@@ -106,15 +253,12 @@ def count_adjacent_rolls(grid, row, col):
 def find_accessible_rolls(grid):
     """
     Find all rolls of paper (@) that have fewer than 4 adjacent rolls.
-    Returns count of accessible rolls and a visual representation.
+    Returns list of (row, col) positions of accessible rolls.
     """
     rows = len(grid)
     cols = len(grid[0])
     
-    count = 0
-    visual_grid = [list(row) for row in grid]
-    
-    print(f"{Fore.YELLOW}Processing grid of size {rows}x{cols}...")
+    accessible = []
     
     for r in range(rows):
         for c in range(cols):
@@ -123,29 +267,51 @@ def find_accessible_rolls(grid):
                 
                 # Forklift can access if fewer than 4 adjacent rolls
                 if adjacent_rolls < 4:
-                    count += 1
-                    # Mark accessible roll (keep original character in visual)
+                    accessible.append((r, c))
+    
+    return accessible
+
+
+def create_visual_grid(grid, accessible_positions, removed_positions):
+    """
+    Create a visual representation of the grid.
+    Accessible rolls are marked with 'x', removed rolls with '.', 
+    and inaccessible rolls remain as '@'.
+    """
+    rows = len(grid)
+    cols = len(grid[0])
+    
+    visual_grid = [list(row) for row in grid]
+    
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r][c] == '@':
+                if (r, c) in accessible_positions:
+                    # Mark as accessible (about to be removed)
                     visual_grid[r][c] = f"{Fore.GREEN}x{Fore.RESET}"
+                elif (r, c) in removed_positions:
+                    # Mark as removed
+                    visual_grid[r][c] = f"{Fore.YELLOW}x{Fore.RESET}"
                 else:
-                    # Keep inaccessible roll as '@'
+                    # Mark as inaccessible
                     visual_grid[r][c] = f"{Fore.RED}@{Fore.RESET}"
             else:
-                # Empty space
+                # Empty space or previously removed
                 visual_grid[r][c] = f"{Fore.BLUE}.{Fore.RESET}"
     
-    # Create visual representation as string
+    # Convert to string
     visual_str = ""
     for r in range(rows):
         row_str = ""
         for c in range(cols):
             if visual_grid[r][c].startswith('\x1b'):
-                # Colorama escape sequence - just append
+                # Colorama escape sequence
                 row_str += visual_grid[r][c]
             else:
                 row_str += visual_grid[r][c]
         visual_str += row_str + "\n"
     
-    return count, visual_str
+    return visual_str
 
 
 def part1(content):
@@ -160,7 +326,11 @@ def part1(content):
     print(f"{Fore.YELLOW}Part 1: Finding accessible rolls of paper...")
     print(f"{Fore.YELLOW}A roll is accessible if it has fewer than 4 adjacent rolls (@)")
     
-    accessible_count, visual_grid = find_accessible_rolls(grid)
+    accessible = find_accessible_rolls(grid)
+    accessible_count = len(accessible)
+    
+    # Create visualization
+    visual_grid = create_visual_grid(grid, accessible, set())
     
     print(f"\n{Fore.CYAN}Grid visualization (accessible rolls marked with 'x'):")
     print(f"{Fore.CYAN}{'='*40}")
@@ -176,17 +346,105 @@ def part1(content):
     }
 
 
+def simulate_removal_process(grid):
+    """
+    Simulate the iterative removal process:
+    1. Find accessible rolls (< 4 neighbors)
+    2. Remove them
+    3. Repeat until no accessible rolls remain
+    Returns total rolls removed and list of visualizations for each iteration.
+    """
+    # Create a copy to modify
+    current_grid = [row.copy() for row in grid]
+    rows = len(grid)
+    cols = len(grid[0])
+    
+    total_removed = 0
+    iterations = []
+    iteration_number = 1
+    
+    print(f"\n{Fore.YELLOW}Starting iterative removal process...")
+    
+    while True:
+        # Find accessible rolls in current grid
+        accessible = find_accessible_rolls(current_grid)
+        
+        if not accessible:
+            print(f"{Fore.CYAN}No more accessible rolls. Process complete.")
+            break
+        
+        # Remove accessible rolls
+        removed_this_iteration = 0
+        for r, c in accessible:
+            current_grid[r][c] = '.'
+            removed_this_iteration += 1
+        
+        total_removed += removed_this_iteration
+        
+        # Create visualization for this iteration
+        removed_set = set()
+        for r in range(rows):
+            for c in range(cols):
+                if grid[r][c] == '@' and current_grid[r][c] == '.':
+                    removed_set.add((r, c))
+        
+        visual = create_visual_grid(grid, accessible, removed_set)
+        
+        iterations.append({
+            "iteration": iteration_number,
+            "removed": removed_this_iteration,
+            "total_removed": total_removed,
+            "visualization": visual
+        })
+        
+        print(f"{Fore.CYAN}Iteration {iteration_number}: Removed {removed_this_iteration} rolls "
+              f"(Total: {total_removed})")
+        
+        iteration_number += 1
+    
+    return total_removed, iterations
+
+
 def part2(content):
     """
-    Solution for Part 2: Placeholder for now.
+    Solution for Part 2: Simulate iterative removal process.
+    Keep removing accessible rolls until no more can be removed.
+    Count total rolls removed.
     """
     start_time = time.time()
     
-    print(f"{Fore.YELLOW}Part 2: Not implemented yet")
+    grid = parse_input(content)
+    
+    print(f"{Fore.YELLOW}Part 2: Simulating iterative removal process...")
+    print(f"{Fore.YELLOW}Each iteration: remove accessible rolls, then check again")
+    
+    total_removed, iterations = simulate_removal_process(grid)
+    
+    # Print summary of iterations
+    print(f"\n{Fore.CYAN}{'='*40}")
+    print(f"{Fore.CYAN}Iteration Summary:")
+    print(f"{Fore.CYAN}{'='*40}")
+    
+    for i, iteration in enumerate(iterations[:]): 
+        print(f"\n{Fore.YELLOW}Iteration {iteration['iteration']}:")
+        print(f"{Fore.GREEN}  Removed: {iteration['removed']}")
+        print(f"{Fore.GREEN}  Total so far: {iteration['total_removed']}")
+        if i < 2:  # Show visuals for first 2 iterations
+            print(f"{Fore.CYAN}  Visualization:")
+            print(iteration['visualization'])
+    
+    if iterations:
+        last_iteration = iterations[-1]
+        print(f"\n{Fore.CYAN}Final state:")
+        print(last_iteration['visualization'])
+    
+    print(f"\n{Fore.GREEN}Total rolls removed: {total_removed}")
     
     return {
-        "value": "N/A",
-        "execution_time": time.time() - start_time
+        "value": total_removed,
+        "execution_time": time.time() - start_time,
+        "iterations": len(iterations),
+        "iterations_detail": iterations[:3] if iterations else []
     }
 
 
@@ -335,6 +593,10 @@ def print_results(results):
                       f"{Fore.GREEN}{part_result['value']:<15} "
                       f"{status_color}{status_text}  "
                       f"{Fore.CYAN}Time: {part_result['execution_time']:.6f}s")
+                
+                # Print additional info for part2
+                if part_name == "part2" and "iterations" in part_result:
+                    print(f"     {Fore.CYAN}Iterations: {part_result['iterations']}")
         else:
             print(f"  {Fore.RED}Error - {result}")
             all_tests_passed = False
