@@ -195,25 +195,6 @@ def count_fresh_ids_from_ranges(ranges):
     return total
 
 
-def get_min_max_ids(ranges):
-    """
-    Get minimum and maximum IDs from ranges without creating huge lists.
-    """
-    if not ranges:
-        return None, None
-    
-    min_id = float('inf')
-    max_id = float('-inf')
-    
-    for start, end in ranges:
-        if start < min_id:
-            min_id = start
-        if end > max_id:
-            max_id = end
-    
-    return min_id, max_id
-
-
 def part1(content):
     """
     Solution for Part 1: Count how many available ingredient IDs are fresh.
