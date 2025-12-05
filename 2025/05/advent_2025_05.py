@@ -109,28 +109,6 @@ def parse_input(content, include_ids=True):
         # We have a clear separation with double newline
         ranges_section = sections[0].strip()
         ids_section = sections[1].strip() if include_ids and len(sections) > 1 else ""
-    # else:
-    #     # Try to find empty line
-    #     lines = content.strip().split('\n')
-    #     empty_line_index = None
-        
-    #     for i, line in enumerate(lines):
-    #         if line.strip() == '':
-    #             empty_line_index = i
-    #             break
-        
-    #     if empty_line_index is not None:
-    #         # We found an empty line
-    #         ranges_section = '\n'.join(lines[:empty_line_index])
-    #         ids_section = '\n'.join(lines[empty_line_index+1:]) if include_ids else ""
-    #     elif include_ids:
-    #         # No empty line found, but we need IDs for part 1
-    #         ranges_section = content.strip()
-    #         ids_section = ""
-    #     else:
-    #         # For part 2, we only need ranges
-    #         ranges_section = content.strip()
-    #         ids_section = ""
     
     # Parse ranges
     ranges = []
@@ -160,18 +138,6 @@ def parse_input(content, include_ids=True):
                 ingredient_ids.append(int(line))
             except ValueError:
                 continue
-    
-    # # If we didn't get IDs but we're in part 1, check if some ranges lines are actually IDs
-    # if include_ids and not ingredient_ids:
-    #     for line in ranges_section.split('\n'):
-    #         line = line.strip()
-    #         if not line:
-    #             continue
-    #         if '-' not in line:
-    #             try:
-    #                 ingredient_ids.append(int(line))
-    #             except ValueError:
-    #                 continue
     
     return ranges, ingredient_ids
 
@@ -260,10 +226,6 @@ def part1(content):
     print(f"{Fore.YELLOW}Number of ranges: {len(ranges)}")
     print(f"{Fore.YELLOW}Number of ingredient IDs to check: {len(ingredient_ids)}")
     
-    # if not ingredient_ids:
-    #     print(f"{Fore.RED}Warning: No ingredient IDs found in input!")
-    #     print(f"{Fore.YELLOW}Assuming all lines before blank line are ranges...")
-    
     # Count fresh IDs
     fresh_count = 0
     fresh_ids = []
@@ -319,15 +281,6 @@ def part2(content):
     print(f"{Fore.YELLOW}Part 2: Counting all fresh ingredient IDs from ranges...")
     print(f"{Fore.YELLOW}Number of ranges: {len(ranges)}")
     
-    # if not ranges:
-    #     print(f"{Fore.RED}Error: No ranges found in input!")
-    #     return {
-    #         "value": 0,
-    #         "execution_time": time.time() - start_time,
-    #         "ranges_count": 0,
-    #         "merged_ranges_count": 0
-    #     }
-    
     # Merge ranges for efficiency
     merged_ranges = merge_ranges(ranges)
     
@@ -347,17 +300,6 @@ def part2(content):
             range_size = end - start + 1
             print(f"  {i+1:3d}. {start:,}-{end:,} ({range_size:,} IDs)")
     
-    # # Calculate min and max IDs without creating huge lists
-    # min_id, max_id = get_min_max_ids(ranges)
-    
-    # if min_id is not None and max_id is not None:
-    #     total_span = max_id - min_id + 1
-    #     print(f"\n{Fore.CYAN}ID Range Coverage:")
-    #     print(f"  Minimum ID: {min_id:,}")
-    #     print(f"  Maximum ID: {max_id:,}")
-    #     print(f"  Total span: {total_span:,} IDs")
-    #     print(f"  Coverage: {total_fresh:,} fresh IDs out of {total_span:,} possible")
-    
     print(f"\n{Fore.CYAN}{'-'*60}")
     print(f"{Fore.GREEN}Total fresh ingredient IDs from all ranges: {total_fresh:,}")
     print(f"{Fore.CYAN}{'-'*60}")
@@ -366,9 +308,7 @@ def part2(content):
         "value": total_fresh,
         "execution_time": time.time() - start_time,
         "ranges_count": len(ranges),
-        "merged_ranges_count": len(merged_ranges),
-        # "min_id": min_id,
-        # "max_id": max_id
+        "merged_ranges_count": len(merged_ranges)
     }
 
 
