@@ -47,140 +47,164 @@ def print_header(filename, part):
 
 def parse_worksheet(content, right_to_left=False):
     """
-    Parse the worksheet content into separate problems.
+    Parse worksheet with proper handling of multi-digit numbers.
     
-    Args:
-        content: Worksheet content as string
-        right_to_left: If True, read numbers right-to-left within each column
+    The key insight: Each problem consists of numbers written vertically.
+    Problems are separated by empty columns.
     """
     lines = content.rstrip('\n').split('\n')
     
-    # Remove completely empty lines
-    lines = [line for line in lines if line.strip() != '']
+    # Remove empty lines
+    lines = [line.rstrip('\n') for line in lines if line.strip() != '']
     
     if not lines:
         return []
     
-    # Find the operation line (contains + or *)
+    # Find operation line (has + or *)
     op_line_idx = -1
-    for idx, line in enumerate(lines):
+    for i, line in enumerate(lines):
         if '+' in line or '*' in line:
-            op_line_idx = idx
+            op_line_idx = i
             break
     
     if op_line_idx == -1:
         return []
     
-    # Separate number lines and operation line
+    # Get number lines and operation line
     num_lines = lines[:op_line_idx]
     op_line = lines[op_line_idx]
     
-    # Determine maximum width
-    all_lines = num_lines + [op_line]
-    max_width = max(len(line) for line in all_lines)
+    # Find maximum width
+    max_len = max(max(len(line) for line in num_lines), len(op_line))
     
-    # Pad all lines to max_width
-    padded_lines = [line.ljust(max_width) for line in num_lines]
-    padded_op_line = op_line.ljust(max_width)
+    # Pad all lines to max_len
+    padded_nums = [line.ljust(max_len) for line in num_lines]
+    padded_op = op_line.ljust(max_len)
     
+    # First, identify all operation positions
+    op_positions = []
+    for col in range(max_len):
+        if col < len(padded_op) and padded_op[col] in ('+', '*'):
+            op_positions.append(col)
+    
+    # Group operation positions into problems
     problems = []
-    col = 0
-    
-    while col < max_width:
-        # Skip leading spaces
-        while col < max_width and all(
-            col >= len(line) or line[col] == ' ' 
-            for line in padded_lines + [padded_op_line]
-        ):
-            col += 1
+    if op_positions:
+        # Sort operation positions
+        op_positions.sort()
         
-        if col >= max_width:
-            break
-        
-        # Start of a problem
-        problem_numbers = []
-        problem_op = None
-        
-        # For each number in the problem, we need to collect its digits
-        # A number spans multiple columns
-        num_count = len(padded_lines)  # Each row is a number in the problem
-        
-        # Initialize digit collection for each number
-        # Each number's digits will be collected across columns
-        number_digits = [[] for _ in range(num_count)]
-        
-        # Process columns until we hit a separator or end
-        while col < max_width:
-            # Check operation line
-            if col < len(padded_op_line) and padded_op_line[col] in ('+', '*'):
-                problem_op = padded_op_line[col]
-            
-            # For right-to-left reading, we need to handle digits differently
-            # In normal left-to-right: digits are collected left to right
-            # In right-to-left: digits within each column represent different positions
-            
-            if right_to_left:
-                # For Part 2: Digits in a column represent the number read top-to-bottom
-                # But each column is a digit position from right to left
-                # So we need to reverse how we build numbers
-                pass  # We'll handle this differently
-            
-            # Check number lines and collect digits
-            for row_idx, line in enumerate(padded_lines):
-                if col < len(line) and line[col].isdigit():
-                    number_digits[row_idx].append(line[col])
-            
-            col += 1
-            
-            # Check if next column is a separator or end
-            if col >= max_width:
-                break
-            
-            # Check if next column is empty for all lines
-            next_col_empty = True
-            if col < len(padded_op_line) and padded_op_line[col] != ' ':
-                next_col_empty = False
-            for line in padded_lines:
-                if col < len(line) and line[col] != ' ':
-                    next_col_empty = False
-                    break
-            
-            if next_col_empty:
-                break
-        
-        # Build numbers from collected digits
-        for digits in number_digits:
-            if digits:  # Check if we collected any digits
-                if right_to_left:
-                    # For Part 2: The digits in the list are from left to right columns
-                    # But they represent the number written right-to-left
-                    # So we need to reverse the digits to get the correct number
-                    digits_str = ''.join(digits)
-                    # The number is written with most significant digit at top
-                    # So we just need to join them in the order we collected
-                    try:
-                        problem_numbers.append(int(digits_str))
-                    except ValueError:
-                        pass
+        # Group consecutive operation positions (same problem)
+        current_group = [op_positions[0]]
+        for i in range(1, len(op_positions)):
+            # Check if positions are consecutive (same problem)
+            if op_positions[i] == op_positions[i-1] + 1:
+                current_group.append(op_positions[i])
+            else:
+                # Check if there's content between them
+                has_content_between = False
+                for check_col in range(op_positions[i-1] + 1, op_positions[i]):
+                    if check_col < len(padded_op) and padded_op[check_col] != ' ':
+                        has_content_between = True
+                        break
+                    for num_line in padded_nums:
+                        if check_col < len(num_line) and num_line[check_col] != ' ':
+                            has_content_between = True
+                            break
+                    if has_content_between:
+                        break
+                
+                if has_content_between:
+                    # Different problem, process current group
+                    process_problem_group(current_group, problems, padded_nums, padded_op, max_len, right_to_left)
+                    current_group = [op_positions[i]]
                 else:
-                    # For Part 1: Simple join of digits
-                    digits_str = ''.join(digits)
-                    try:
-                        problem_numbers.append(int(digits_str))
-                    except ValueError:
-                        pass
+                    # Same problem, continue grouping
+                    current_group.append(op_positions[i])
         
-        # Add problem if valid
-        if problem_numbers and problem_op:
-            problems.append({
-                'numbers': problem_numbers,
-                'operation': problem_op
-            })
-        
-        # Skip the separator column
-        col += 1
+        # Process the last group
+        process_problem_group(current_group, problems, padded_nums, padded_op, max_len, right_to_left)
     
     return problems
+
+
+def process_problem_group(op_cols, problems, padded_nums, padded_op, max_len, right_to_left):
+    """Process a group of operation columns as a single problem."""
+    if not op_cols:
+        return
+    
+    # Get the operation (should be same for all columns in group)
+    operation = None
+    for col in op_cols:
+        if col < len(padded_op) and padded_op[col] in ('+', '*'):
+            operation = padded_op[col]
+            break
+    
+    if not operation:
+        return
+    
+    # Find the full extent of this problem
+    # Problem spans from first column with content to last column with content
+    start_col = min(op_cols)
+    end_col = max(op_cols)
+    
+    # Expand left to find all content
+    while start_col > 0:
+        col_has_content = False
+        if start_col - 1 < len(padded_op) and padded_op[start_col - 1] != ' ':
+            col_has_content = True
+        else:
+            for num_line in padded_nums:
+                if start_col - 1 < len(num_line) and num_line[start_col - 1] != ' ':
+                    col_has_content = True
+                    break
+        
+        if not col_has_content:
+            break
+        start_col -= 1
+    
+    # Expand right to find all content
+    while end_col < max_len - 1:
+        col_has_content = False
+        if end_col + 1 < len(padded_op) and padded_op[end_col + 1] != ' ':
+            col_has_content = True
+        else:
+            for num_line in padded_nums:
+                if end_col + 1 < len(num_line) and num_line[end_col + 1] != ' ':
+                    col_has_content = True
+                    break
+        
+        if not col_has_content:
+            break
+        end_col += 1
+    
+    # Now extract numbers
+    # Each row in padded_nums is a separate number in the problem
+    numbers = []
+    for row_idx in range(len(padded_nums)):
+        # Collect all digits for this number across the problem columns
+        digits = []
+        for col in range(start_col, end_col + 1):
+            if col < len(padded_nums[row_idx]) and padded_nums[row_idx][col].isdigit():
+                digits.append(padded_nums[row_idx][col])
+        
+        if digits:
+            if right_to_left:
+                # For Part 2: The number is written right-to-left
+                # So we need to reverse the order of digits
+                digits.reverse()
+            
+            num_str = ''.join(digits)
+            if num_str:
+                try:
+                    numbers.append(int(num_str))
+                except ValueError:
+                    pass
+    
+    if numbers:
+        problems.append({
+            'numbers': numbers,
+            'operation': operation
+        })
 
 
 def solve_problems(problems):
@@ -216,225 +240,71 @@ def solve_problems(problems):
     return total_sum, results
 
 
-def parse_worksheet_vertical(content, right_to_left=False):
-    """
-    New approach: Parse worksheet considering numbers are written vertically.
-    Each number occupies multiple columns, one column per digit.
-    """
-    lines = content.rstrip('\n').split('\n')
+def debug_example():
+    """Debug the example to understand the format better."""
+    example = """123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+*   +   *   +  """
     
-    # Remove completely empty lines
-    lines = [line for line in lines if line.strip() != '']
+    print(f"\n{Fore.MAGENTA}{'='*60}")
+    print(f"{Fore.MAGENTA}DEBUGGING EXAMPLE")
+    print(f"{Fore.MAGENTA}{'='*60}")
     
-    if not lines:
-        return []
-    
-    # Find the operation line
-    op_line_idx = -1
-    for idx, line in enumerate(lines):
-        if '+' in line or '*' in line:
-            op_line_idx = idx
-            break
-    
-    if op_line_idx == -1:
-        return []
-    
-    # Separate number lines and operation line
-    num_lines = lines[:op_line_idx]
-    op_line = lines[op_line_idx]
-    
-    # Determine maximum width
-    max_width = max(max(len(line) for line in num_lines), len(op_line))
-    
-    # Pad all lines
-    padded_lines = [line.ljust(max_width) for line in num_lines]
-    padded_op_line = op_line.ljust(max_width)
-    
-    problems = []
-    col = 0
-    
-    # First, identify problem boundaries by finding operation symbols
-    # Operation symbols mark the end (or middle) of problems
-    op_positions = []
-    for c in range(max_width):
-        if c < len(padded_op_line) and padded_op_line[c] in ('+', '*'):
-            op_positions.append(c)
-    
-    # Group operation positions into problems
-    # Problems are separated by columns with only spaces
-    problem_ranges = []
-    if op_positions:
-        current_start = op_positions[0]
-        for i in range(1, len(op_positions)):
-            # Check if there's a gap (separator) between operations
-            has_gap = True
-            for check_pos in range(op_positions[i-1] + 1, op_positions[i]):
-                # Check if any line has non-space in this column
-                for line in padded_lines + [padded_op_line]:
-                    if check_pos < len(line) and line[check_pos] != ' ':
-                        has_gap = False
-                        break
-                if not has_gap:
-                    break
-            
-            if has_gap:
-                # End of current problem
-                problem_ranges.append((current_start, op_positions[i-1]))
-                current_start = op_positions[i]
-        
-        # Add the last problem
-        problem_ranges.append((current_start, op_positions[-1]))
-    
-    # For each problem range, extract the numbers
-    for start_col, end_col in problem_ranges:
-        # Find the operation in this range
-        operation = None
-        for c in range(start_col, end_col + 1):
-            if c < len(padded_op_line) and padded_op_line[c] in ('+', '*'):
-                operation = padded_op_line[c]
-                break
-        
-        if not operation:
-            continue
-        
-        # For each number line (row), extract the number
-        numbers = []
-        for row_idx in range(len(padded_lines)):
-            digits = []
-            for col_idx in range(start_col, end_col + 1):
-                if col_idx < len(padded_lines[row_idx]) and padded_lines[row_idx][col_idx].isdigit():
-                    digits.append(padded_lines[row_idx][col_idx])
-            
-            if digits:
-                if right_to_left:
-                    # For Part 2: The number is written right-to-left
-                    # So we need to read the digits as-is (they're already in correct order)
-                    num_str = ''.join(digits)
-                else:
-                    # For Part 1: The number is written left-to-right normally
-                    num_str = ''.join(digits)
-                
-                if num_str:
-                    try:
-                        numbers.append(int(num_str))
-                    except ValueError:
-                        pass
-        
-        if numbers:
-            problems.append({
-                'numbers': numbers,
-                'operation': operation
-            })
-    
-    return problems
-
-
-def parse_worksheet_final(content, right_to_left=False):
-    """
-    Final parser based on the actual description.
-    The key insight: Each problem has numbers written vertically.
-    For Part 2, each number is written right-to-left in columns.
-    """
-    lines = content.rstrip('\n').split('\n')
-    
-    # Remove empty lines
-    lines = [line for line in lines if line.strip() != '']
-    
-    if not lines:
-        return []
+    lines = example.split('\n')
+    print(f"{Fore.CYAN}Lines:")
+    for i, line in enumerate(lines):
+        print(f"  {i}: '{line}'")
     
     # Find operation line
     op_line_idx = -1
-    for idx, line in enumerate(lines):
+    for i, line in enumerate(lines):
         if '+' in line or '*' in line:
-            op_line_idx = idx
+            op_line_idx = i
             break
     
-    if op_line_idx == -1:
-        return []
+    print(f"\n{Fore.CYAN}Operation line index: {op_line_idx}")
     
-    num_lines = lines[:op_line_idx]
-    op_line = lines[op_line_idx]
-    
-    # Pad to same width
-    max_width = max(max(len(l) for l in num_lines), len(op_line))
-    padded_lines = [l.ljust(max_width) for l in num_lines]
-    padded_op_line = op_line.ljust(max_width)
-    
-    # Find all operation positions
-    op_cols = []
-    for c in range(max_width):
-        if c < len(padded_op_line) and padded_op_line[c] in ('+', '*'):
-            op_cols.append(c)
-    
-    # Group into problems (operations separated by empty columns)
-    problems = []
-    i = 0
-    while i < len(op_cols):
-        start = op_cols[i]
-        # Find end of this problem
-        j = i
-        while j + 1 < len(op_cols) and op_cols[j+1] - op_cols[j] == 1:
-            j += 1
+    if op_line_idx >= 0:
+        num_lines = lines[:op_line_idx]
+        op_line = lines[op_line_idx]
         
-        end = op_cols[j]
+        print(f"\n{Fore.CYAN}Number lines ({len(num_lines)}):")
+        for i, line in enumerate(num_lines):
+            print(f"  {i}: '{line}'")
         
-        # Get operation (should be the same for all columns in problem)
-        operation = padded_op_line[start]
+        print(f"\n{Fore.CYAN}Operation line: '{op_line}'")
         
-        # Extract numbers for this problem
-        numbers = []
-        for row in range(len(padded_lines)):
-            digits = []
-            for col in range(start, end + 1):
-                if col < len(padded_lines[row]) and padded_lines[row][col].isdigit():
-                    digits.append(padded_lines[row][col])
+        # Show column by column
+        max_len = max(max(len(l) for l in num_lines), len(op_line))
+        print(f"\n{Fore.CYAN}Column analysis (max_len={max_len}):")
+        for col in range(max_len):
+            col_chars = []
+            for i in range(len(num_lines)):
+                if col < len(num_lines[i]):
+                    col_chars.append(num_lines[i][col])
+                else:
+                    col_chars.append(' ')
             
-            if digits:
-                if right_to_left:
-                    # For Part 2: Reverse the digits
-                    # Actually, let's think: In the example "64" becomes "46" when read right-to-left
-                    # So we need to reverse the order of digits within each number
-                    digits.reverse()
-                
-                num_str = ''.join(digits)
-                if num_str:
-                    try:
-                        numbers.append(int(num_str))
-                    except ValueError:
-                        pass
-        
-        if numbers and operation:
-            problems.append({
-                'numbers': numbers,
-                'operation': operation
-            })
-        
-        i = j + 1
-    
-    return problems
-
-
-def parse_worksheet_part1(content):
-    """Parser for Part 1 (left-to-right reading)"""
-    return parse_worksheet_final(content, right_to_left=False)
-
-
-def parse_worksheet_part2(content):
-    """Parser for Part 2 (right-to-left reading)"""
-    return parse_worksheet_final(content, right_to_left=True)
+            op_char = op_line[col] if col < len(op_line) else ' '
+            
+            print(f"  Col {col:2d}: nums={''.join(col_chars)} op={op_char}")
 
 
 def part1(content):
     """
-    Solution for Part 1: Solve the problems on the math worksheet (left-to-right).
+    Solution for Part 1: Solve the problems on the math worksheet.
     """
     start_time = time.time()
     
-    print(f"{Fore.YELLOW}Part 1: Solving worksheet problems (left-to-right)...")
+    print(f"{Fore.YELLOW}Part 1: Solving worksheet problems...")
+    
+    # For debugging
+    if "test_I.txt" in content[:100]:
+        debug_example()
     
     # Parse the worksheet
-    problems = parse_worksheet_part1(content)
+    problems = parse_worksheet(content, right_to_left=False)
     
     print(f"{Fore.YELLOW}Number of problems found: {len(problems)}")
     
@@ -450,7 +320,7 @@ def part1(content):
     # Solve each problem
     grand_total, results = solve_problems(problems)
     
-    # Print detailed results
+    # Print summary
     print(f"\n{Fore.CYAN}{'-'*60}")
     print(f"{Fore.CYAN}Worksheet Solutions Summary (Part 1):")
     print(f"{Fore.CYAN}{'-'*60}")
@@ -486,14 +356,14 @@ def part1(content):
 
 def part2(content):
     """
-    Solution for Part 2: Solve the problems reading numbers right-to-left.
+    Solution for Part 2: Solve the problems with numbers read right-to-left.
     """
     start_time = time.time()
     
     print(f"{Fore.YELLOW}Part 2: Solving worksheet problems (right-to-left)...")
     
     # Parse the worksheet with right-to-left reading
-    problems = parse_worksheet_part2(content)
+    problems = parse_worksheet(content, right_to_left=True)
     
     print(f"{Fore.YELLOW}Number of problems found: {len(problems)}")
     
@@ -509,7 +379,7 @@ def part2(content):
     # Solve each problem
     grand_total, results = solve_problems(problems)
     
-    # Print detailed results
+    # Print summary
     print(f"\n{Fore.CYAN}{'-'*60}")
     print(f"{Fore.CYAN}Worksheet Solutions Summary (Part 2):")
     print(f"{Fore.CYAN}{'-'*60}")
