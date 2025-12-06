@@ -2,6 +2,57 @@
 
 '''
 --- Day 6: Trash Compactor ---
+
+After helping the Elves in the kitchen, you were taking a break and helping them re-enact a movie scene when you over-enthusiastically jumped into the garbage chute!
+
+A brief fall later, you find yourself in a garbage smasher. Unfortunately, the door's been magnetically sealed.
+
+As you try to find a way out, you are approached by a family of cephalopods! They're pretty sure they can get the door open, but it will take some time. While you wait, they're curious if you can help the youngest cephalopod with her math homework.
+
+Cephalopod math doesn't look that different from normal math. The math worksheet (your puzzle input) consists of a list of problems; each problem has a group of numbers that need to be either added (+) or multiplied (*) together.
+
+However, the problems are arranged a little strangely; they seem to be presented next to each other in a very long horizontal list. For example:
+
+123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+*   +   *   +  
+Each problem's numbers are arranged vertically; at the bottom of the problem is the symbol for the operation that needs to be performed. Problems are separated by a full column of only spaces. The left/right alignment of numbers within each problem can be ignored.
+
+So, this worksheet contains four problems:
+
+123 * 45 * 6 = 33210
+328 + 64 + 98 = 490
+51 * 387 * 215 = 4243455
+64 + 23 + 314 = 401
+To check their work, cephalopod students are given the grand total of adding together all of the answers to the individual problems. In this worksheet, the grand total is 33210 + 490 + 4243455 + 401 = 4277556.
+
+Of course, the actual worksheet is much wider. You'll need to make sure to unroll it completely so that you can read the problems clearly.
+
+Solve the problems on the math worksheet. What is the grand total found by adding together all of the answers to the individual problems?
+
+
+--- Part Two ---
+
+The big cephalopods come back to check on how things are going. When they see that your grand total doesn't match the one expected by the worksheet, they realize they forgot to explain how to read cephalopod math.
+
+Cephalopod math is written right-to-left in columns. Each number is given in its own column, with the most significant digit at the top and the least significant digit at the bottom. (Problems are still separated with a column consisting only of spaces, and the symbol at the bottom of the problem is still the operator to use.)
+
+Here's the example worksheet again:
+
+123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+*   +   *   +  
+Reading the problems right-to-left one column at a time, the problems are now quite different:
+
+The rightmost problem is 4 + 431 + 623 = 1058
+The second problem from the right is 175 * 581 * 32 = 3253600
+The third problem from the right is 8 + 248 + 369 = 625
+Finally, the leftmost problem is 356 * 24 * 1 = 8544
+Now, the grand total is 1058 + 3253600 + 625 + 8544 = 3263827.
+
+Solve the problems on the math worksheet again. What is the grand total found by adding together all of the answers to the individual problems?
 '''
 
 import os
@@ -18,7 +69,7 @@ TEST_SOLUTIONS = {
     },
     "input_I.txt": {
         "part1": '4405895212738', 
-        "part2": 'N/A',  
+        "part2": '7450962489289',  
     }
 }
 
@@ -45,166 +96,173 @@ def print_header(filename, part):
     print(f"{Fore.CYAN}{'='*80}\n")
 
 
-def parse_worksheet(content, right_to_left=False):
+def parse_worksheet_part1(content):
     """
-    Parse worksheet with proper handling of multi-digit numbers.
-    
-    The key insight: Each problem consists of numbers written vertically.
-    Problems are separated by empty columns.
+    Parse worksheet for Part 1 (left-to-right reading).
+    Problems are separated by empty columns. Numbers are read horizontally.
     """
     lines = content.rstrip('\n').split('\n')
-    
-    # Remove empty lines
-    lines = [line.rstrip('\n') for line in lines if line.strip() != '']
-    
-    if not lines:
-        return []
+    lines = [line for line in lines if line.strip() != '']
     
     # Find operation line (has + or *)
-    op_line_idx = -1
     for i, line in enumerate(lines):
         if '+' in line or '*' in line:
             op_line_idx = i
             break
     
-    if op_line_idx == -1:
-        return []
-    
-    # Get number lines and operation line
     num_lines = lines[:op_line_idx]
     op_line = lines[op_line_idx]
     
-    # Find maximum width
-    max_len = max(max(len(line) for line in num_lines), len(op_line))
+    # Pad all lines to same width
+    width = max(len(line) for line in num_lines + [op_line])
+    num_lines = [line.ljust(width) for line in num_lines]
+    op_line = op_line.ljust(width)
     
-    # Pad all lines to max_len
-    padded_nums = [line.ljust(max_len) for line in num_lines]
-    padded_op = op_line.ljust(max_len)
-    
-    # First, identify all operation positions
-    op_positions = []
-    for col in range(max_len):
-        if col < len(padded_op) and padded_op[col] in ('+', '*'):
-            op_positions.append(col)
-    
-    # Group operation positions into problems
     problems = []
-    if op_positions:
-        # Sort operation positions
-        op_positions.sort()
+    col = 0
+    
+    while col < width:
+        # Skip empty columns (problem separators)
+        if all(line[col] == ' ' for line in num_lines + [op_line]):
+            col += 1
+            continue
         
-        # Group consecutive operation positions (same problem)
-        current_group = [op_positions[0]]
-        for i in range(1, len(op_positions)):
-            # Check if positions are consecutive (same problem)
-            if op_positions[i] == op_positions[i-1] + 1:
-                current_group.append(op_positions[i])
+        # Start of a new problem
+        start_col = col
+        operation = None
+        
+        # Find where this problem ends
+        while col < width:
+            if op_line[col] in ('+', '*'):
+                operation = op_line[col]
+            
+            col += 1
+            
+            if col >= width:
+                break
+            
+            # Check if next column is empty (end of problem)
+            next_empty = True
+            if op_line[col] != ' ':
+                next_empty = False
             else:
-                # Check if there's content between them
-                has_content_between = False
-                for check_col in range(op_positions[i-1] + 1, op_positions[i]):
-                    if check_col < len(padded_op) and padded_op[check_col] != ' ':
-                        has_content_between = True
+                for line in num_lines:
+                    if line[col] != ' ':
+                        next_empty = False
                         break
-                    for num_line in padded_nums:
-                        if check_col < len(num_line) and num_line[check_col] != ' ':
-                            has_content_between = True
-                            break
-                    if has_content_between:
-                        break
-                
-                if has_content_between:
-                    # Different problem, process current group
-                    process_problem_group(current_group, problems, padded_nums, padded_op, max_len, right_to_left)
-                    current_group = [op_positions[i]]
-                else:
-                    # Same problem, continue grouping
-                    current_group.append(op_positions[i])
+            
+            if next_empty:
+                break
         
-        # Process the last group
-        process_problem_group(current_group, problems, padded_nums, padded_op, max_len, right_to_left)
+        # Extract numbers from this problem area
+        numbers = []
+        for row in num_lines:
+            digits = ''
+            for c in range(start_col, col):
+                if row[c].isdigit():
+                    digits += row[c]
+            if digits:
+                numbers.append(int(digits))
+        
+        if numbers and operation:
+            problems.append({
+                'numbers': numbers,
+                'operation': operation
+            })
+        
+        # Skip separator column
+        col += 1
     
     return problems
 
 
-def process_problem_group(op_cols, problems, padded_nums, padded_op, max_len, right_to_left):
-    """Process a group of operation columns as a single problem."""
-    if not op_cols:
-        return
+def parse_worksheet_part2_final(content):
+    """
+    Parse worksheet for Part 2 (right-to-left column reading).
+    Problems are separated by empty columns. Numbers are built by reading columns
+    from right to left, top to bottom.
+    """
+    lines = content.rstrip('\n').split('\n')
+    lines = [line for line in lines if line.strip() != '']
     
-    # Get the operation (should be same for all columns in group)
-    operation = None
-    for col in op_cols:
-        if col < len(padded_op) and padded_op[col] in ('+', '*'):
-            operation = padded_op[col]
+    # Find operation line (has + or *)
+    for i, line in enumerate(lines):
+        if '+' in line or '*' in line:
+            op_line_idx = i
             break
     
-    if not operation:
-        return
+    num_lines = lines[:op_line_idx]
+    op_line = lines[op_line_idx]
     
-    # Find the full extent of this problem
-    # Problem spans from first column with content to last column with content
-    start_col = min(op_cols)
-    end_col = max(op_cols)
+    # Pad all lines to same width
+    width = max(len(line) for line in num_lines + [op_line])
+    num_lines = [line.ljust(width) for line in num_lines]
+    op_line = op_line.ljust(width)
     
-    # Expand left to find all content
-    while start_col > 0:
-        col_has_content = False
-        if start_col - 1 < len(padded_op) and padded_op[start_col - 1] != ' ':
-            col_has_content = True
-        else:
-            for num_line in padded_nums:
-                if start_col - 1 < len(num_line) and num_line[start_col - 1] != ' ':
-                    col_has_content = True
-                    break
+    problems = []
+    col = 0
+    
+    while col < width:
+        # Skip empty columns (problem separators)
+        if all(line[col] == ' ' for line in num_lines + [op_line]):
+            col += 1
+            continue
         
-        if not col_has_content:
-            break
-        start_col -= 1
-    
-    # Expand right to find all content
-    while end_col < max_len - 1:
-        col_has_content = False
-        if end_col + 1 < len(padded_op) and padded_op[end_col + 1] != ' ':
-            col_has_content = True
-        else:
-            for num_line in padded_nums:
-                if end_col + 1 < len(num_line) and num_line[end_col + 1] != ' ':
-                    col_has_content = True
-                    break
+        # Start of a new problem
+        start_col = col
+        operation = None
         
-        if not col_has_content:
-            break
-        end_col += 1
-    
-    # Now extract numbers
-    # Each row in padded_nums is a separate number in the problem
-    numbers = []
-    for row_idx in range(len(padded_nums)):
-        # Collect all digits for this number across the problem columns
-        digits = []
-        for col in range(start_col, end_col + 1):
-            if col < len(padded_nums[row_idx]) and padded_nums[row_idx][col].isdigit():
-                digits.append(padded_nums[row_idx][col])
-        
-        if digits:
-            if right_to_left:
-                # For Part 2: The number is written right-to-left
-                # So we need to reverse the order of digits
-                digits.reverse()
+        # Find where this problem ends
+        while col < width:
+            if op_line[col] in ('+', '*'):
+                operation = op_line[col]
             
-            num_str = ''.join(digits)
-            if num_str:
-                try:
-                    numbers.append(int(num_str))
-                except ValueError:
-                    pass
+            col += 1
+            
+            if col >= width:
+                break
+            
+            # Check if next column is empty (end of problem)
+            next_empty = True
+            if op_line[col] != ' ':
+                next_empty = False
+            else:
+                for line in num_lines:
+                    if line[col] != ' ':
+                        next_empty = False
+                        break
+            
+            if next_empty:
+                break
+        
+        end_col = col - 1
+        
+        # For Part 2: Read columns from right to left
+        # Each column forms one number (digits read top to bottom)
+        numbers = []
+        
+        # Process columns from rightmost to leftmost
+        for current_col in range(end_col, start_col - 1, -1):
+            digits = ''
+            
+            # Read digits from top to bottom in this column
+            for row in num_lines:
+                if row[current_col].isdigit():
+                    digits += row[current_col]
+            
+            if digits:
+                numbers.append(int(digits))
+        
+        if numbers and operation:
+            problems.append({
+                'numbers': numbers,
+                'operation': operation
+            })
+        
+        # Skip separator column
+        col += 1
     
-    if numbers:
-        problems.append({
-            'numbers': numbers,
-            'operation': operation
-        })
+    return problems
 
 
 def solve_problems(problems):
@@ -240,57 +298,6 @@ def solve_problems(problems):
     return total_sum, results
 
 
-def debug_example():
-    """Debug the example to understand the format better."""
-    example = """123 328  51 64 
- 45 64  387 23 
-  6 98  215 314
-*   +   *   +  """
-    
-    print(f"\n{Fore.MAGENTA}{'='*60}")
-    print(f"{Fore.MAGENTA}DEBUGGING EXAMPLE")
-    print(f"{Fore.MAGENTA}{'='*60}")
-    
-    lines = example.split('\n')
-    print(f"{Fore.CYAN}Lines:")
-    for i, line in enumerate(lines):
-        print(f"  {i}: '{line}'")
-    
-    # Find operation line
-    op_line_idx = -1
-    for i, line in enumerate(lines):
-        if '+' in line or '*' in line:
-            op_line_idx = i
-            break
-    
-    print(f"\n{Fore.CYAN}Operation line index: {op_line_idx}")
-    
-    if op_line_idx >= 0:
-        num_lines = lines[:op_line_idx]
-        op_line = lines[op_line_idx]
-        
-        print(f"\n{Fore.CYAN}Number lines ({len(num_lines)}):")
-        for i, line in enumerate(num_lines):
-            print(f"  {i}: '{line}'")
-        
-        print(f"\n{Fore.CYAN}Operation line: '{op_line}'")
-        
-        # Show column by column
-        max_len = max(max(len(l) for l in num_lines), len(op_line))
-        print(f"\n{Fore.CYAN}Column analysis (max_len={max_len}):")
-        for col in range(max_len):
-            col_chars = []
-            for i in range(len(num_lines)):
-                if col < len(num_lines[i]):
-                    col_chars.append(num_lines[i][col])
-                else:
-                    col_chars.append(' ')
-            
-            op_char = op_line[col] if col < len(op_line) else ' '
-            
-            print(f"  Col {col:2d}: nums={''.join(col_chars)} op={op_char}")
-
-
 def part1(content):
     """
     Solution for Part 1: Solve the problems on the math worksheet.
@@ -299,12 +306,8 @@ def part1(content):
     
     print(f"{Fore.YELLOW}Part 1: Solving worksheet problems...")
     
-    # For debugging
-    if "test_I.txt" in content[:100]:
-        debug_example()
-    
     # Parse the worksheet
-    problems = parse_worksheet(content, right_to_left=False)
+    problems = parse_worksheet_part1(content)
     
     print(f"{Fore.YELLOW}Number of problems found: {len(problems)}")
     
@@ -362,8 +365,8 @@ def part2(content):
     
     print(f"{Fore.YELLOW}Part 2: Solving worksheet problems (right-to-left)...")
     
-    # Parse the worksheet with right-to-left reading
-    problems = parse_worksheet(content, right_to_left=True)
+    # Parse the worksheet
+    problems = parse_worksheet_part2_final(content)
     
     print(f"{Fore.YELLOW}Number of problems found: {len(problems)}")
     
