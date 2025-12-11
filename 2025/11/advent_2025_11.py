@@ -2,8 +2,82 @@
 
 '''
 --- Day 11: Reactor ---
-Part 1: Count all paths from "you" to "out"
-Part 2: Count all paths from "svr" to "out" that visit both "dac" and "fft"
+
+You hear some loud beeping coming from a hatch in the floor of the factory, so you decide to check it out. Inside, you find several large electrical conduits and a ladder.
+
+Climbing down the ladder, you discover the source of the beeping: a large, toroidal reactor which powers the factory above. Some Elves here are hurriedly running between the reactor and a nearby server rack, apparently trying to fix something.
+
+One of the Elves notices you and rushes over. "It's a good thing you're here! We just installed a new server rack, but we aren't having any luck getting the reactor to communicate with it!" You glance around the room and see a tangle of cables and devices running from the server rack to the reactor. She rushes off, returning a moment later with a list of the devices and their outputs (your puzzle input).
+
+For example:
+
+aaa: you hhh
+you: bbb ccc
+bbb: ddd eee
+ccc: ddd eee fff
+ddd: ggg
+eee: out
+fff: out
+ggg: out
+hhh: ccc fff iii
+iii: out
+
+Each line gives the name of a device followed by a list of the devices to which its outputs are attached. So, bbb: ddd eee means that device bbb has two outputs, one leading to device ddd and the other leading to device eee.
+
+The Elves are pretty sure that the issue isn't due to any specific device, but rather that the issue is triggered by data following some specific path through the devices. Data only ever flows from a device through its outputs; it can't flow backwards.
+
+After dividing up the work, the Elves would like you to focus on the devices starting with the one next to you (an Elf hastily attaches a label which just says you) and ending with the main output to the reactor (which is the device with the label out).
+
+To help the Elves figure out which path is causing the issue, they need you to find every path from you to out.
+
+In this example, these are all of the paths from you to out:
+
+Data could take the connection from you to bbb, then from bbb to ddd, then from ddd to ggg, then from ggg to out.
+Data could take the connection to bbb, then to eee, then to out.
+Data could go to ccc, then ddd, then ggg, then out.
+Data could go to ccc, then eee, then out.
+Data could go to ccc, then fff, then out.
+In total, there are 5 different paths leading from you to out.
+
+How many different paths lead from you to out?
+
+
+--- Part Two ---
+
+Thanks in part to your analysis, the Elves have figured out a little bit about the issue. They now know that the problematic data path passes through both dac (a digital-to-analog converter) and fft (a device which performs a fast Fourier transform).
+
+They're still not sure which specific path is the problem, and so they now need you to find every path from svr (the server rack) to out. However, the paths you find must all also visit both dac and fft (in any order).
+
+For example:
+
+svr: aaa bbb
+aaa: fft
+fft: ccc
+bbb: tty
+tty: ccc
+ccc: ddd eee
+ddd: hub
+hub: fff
+eee: dac
+dac: fff
+fff: ggg hhh
+ggg: out
+hhh: out
+
+This new list of devices contains many paths from svr to out:
+
+svr,aaa,fft,ccc,ddd,hub,fff,ggg,out
+svr,aaa,fft,ccc,ddd,hub,fff,hhh,out
+svr,aaa,fft,ccc,eee,dac,fff,ggg,out
+svr,aaa,fft,ccc,eee,dac,fff,hhh,out
+svr,bbb,tty,ccc,ddd,hub,fff,ggg,out
+svr,bbb,tty,ccc,ddd,hub,fff,hhh,out
+svr,bbb,tty,ccc,eee,dac,fff,ggg,out
+svr,bbb,tty,ccc,eee,dac,fff,hhh,out
+
+However, only 2 paths from svr to out visit both dac and fft.
+
+Find all of the paths that lead from svr to out. How many of those paths visit both dac and fft?
 '''
 
 import os
@@ -199,7 +273,7 @@ def count_paths_with_cycles_iterative(graph, start, end):
 
 
 def count_paths_with_required(graph, start, end, required):
-    """Count paths that visit all required nodes - ULTRA OPTIMIZED VERSION."""
+    """Count paths with SMART GRAPH DECOMPOSITION."""
     if start not in graph:
         return 0
     
@@ -213,13 +287,39 @@ def count_paths_with_required(graph, start, end, required):
     node_to_bit = {node: i for i, node in enumerate(sorted(required))}
     all_required_mask = (1 << len(required)) - 1
     
-    # Pre-compute which required nodes are reachable from each node (one-time cost)
-    print(f"{Fore.CYAN}Pre-computing reachability for pruning...")
-    reachable_required = {}
-    all_nodes = set(graph.keys())
-    for neighbor_list in graph.values():
-        all_nodes.update(neighbor_list)
+    print(f"{Fore.CYAN}Analyzing graph structure...")
     
+    # Check if graph is DAG - if so, we can use DP!
+    indegree = defaultdict(int)
+    all_nodes = set(graph.keys())
+    for node in graph:
+        for neighbor in graph[node]:
+            indegree[neighbor] += 1
+            all_nodes.add(neighbor)
+    
+    # Try topological sort
+    topo_order = []
+    queue = deque([n for n in all_nodes if indegree[n] == 0])
+    local_indegree = indegree.copy()
+    
+    while queue:
+        node = queue.popleft()
+        topo_order.append(node)
+        for neighbor in graph.get(node, []):
+            local_indegree[neighbor] -= 1
+            if local_indegree[neighbor] == 0:
+                queue.append(neighbor)
+    
+    is_dag = len(topo_order) == len(all_nodes)
+    
+    if is_dag:
+        print(f"{Fore.GREEN}✓ Graph is a DAG! Using dynamic programming...")
+        return count_paths_dag_with_required(graph, start, end, required, node_to_bit, all_required_mask, topo_order)
+    
+    print(f"{Fore.YELLOW}Graph has cycles, using optimized DFS...")
+    
+    # Pre-compute reachability
+    reachable_required = {}
     for node in all_nodes:
         mask = 0
         visited = {node}
@@ -234,58 +334,83 @@ def count_paths_with_required(graph, start, end, required):
                     queue.append(neighbor)
         reachable_required[node] = mask
     
-    print(f"{Fore.CYAN}Starting optimized path search...")
-    
     count = 0
     visited = set()
     total_iterations = 0
     last_print = time.time()
+    start_time = time.time()
     
-    def dfs_backtrack(node, mask):
+    def dfs_backtrack(node, mask, depth=0):
         nonlocal count, total_iterations, last_print
         
         total_iterations += 1
         
-        # Update progress every 1M iterations
-        if total_iterations % 1000000 == 0:
+        if total_iterations % 100000 == 0:
             current_time = time.time()
-            if current_time - last_print > 2.0:
-                rate = total_iterations / (current_time - time.time() + 0.001)
-                print(f"\r{Fore.CYAN}[{Fore.YELLOW}{total_iterations:,}{Fore.CYAN}] Iterations | "
-                      f"{Fore.GREEN}{count:,}{Fore.CYAN} paths | "
-                      f"{Fore.MAGENTA}{rate:,.0f}{Fore.CYAN} iter/s", end="", flush=True)
+            if current_time - last_print > 0.5:
+                elapsed = current_time - start_time
+                rate = total_iterations / elapsed if elapsed > 0 else 0
+                eta_str = f"{elapsed:.0f}s elapsed"
+                
+                if elapsed > 60 and count > 10000000:
+                    eta_str = f"{Fore.RED}Problem may have >1B solutions!"
+                
+                print(f"\r{Fore.CYAN}[{Fore.YELLOW}{total_iterations:,}{Fore.CYAN}] "
+                      f"iter | {Fore.GREEN}{count:,}{Fore.CYAN} paths | "
+                      f"{Fore.MAGENTA}{rate:,.0f}{Fore.CYAN}/s | {eta_str}", 
+                      end="", flush=True)
                 last_print = current_time
         
-        # Update mask if current node is required
         current_mask = mask
         if node in node_to_bit:
             current_mask = mask | (1 << node_to_bit[node])
         
-        # Reached the end
         if node == end:
             if current_mask == all_required_mask:
                 count += 1
             return
         
-        # CRITICAL PRUNING: check if we can reach all missing required nodes
         needed_mask = all_required_mask ^ current_mask
         if needed_mask != 0:
-            can_reach = reachable_required.get(node, 0)
-            if (can_reach & needed_mask) != needed_mask:
-                return  # Cannot reach all required nodes from here
+            if (reachable_required.get(node, 0) & needed_mask) != needed_mask:
+                return
         
-        # Explore neighbors with backtracking
+        if depth > 250:
+            return
+        
         visited.add(node)
         for neighbor in graph.get(node, []):
             if neighbor not in visited:
-                dfs_backtrack(neighbor, current_mask)
+                dfs_backtrack(neighbor, current_mask, depth + 1)
         visited.remove(node)
     
-    start_time = time.time()
     dfs_backtrack(start, 0)
-    
-    print("\r" + " " * 100 + "\r", end="", flush=True)
+    print("\r" + " " * 120 + "\r", end="", flush=True)
     return count
+
+
+def count_paths_dag_with_required(graph, start, end, required, node_to_bit, all_required_mask, topo_order):
+    """DP for DAGs with required nodes - MUCH FASTER!"""
+    # dp[node][mask] = number of paths from node to end with mask of required nodes visited
+    dp = defaultdict(lambda: defaultdict(int))
+    
+    # Process in reverse topological order
+    for node in reversed(topo_order):
+        if node == end:
+            # Base case: at end, count only if all required visited
+            for mask in range(1 << len(node_to_bit)):
+                dp[node][mask] = 1 if mask == all_required_mask else 0
+        else:
+            # Aggregate from all neighbors
+            for mask in range(1 << len(node_to_bit)):
+                current_mask = mask
+                if node in node_to_bit:
+                    current_mask = mask | (1 << node_to_bit[node])
+                
+                for neighbor in graph.get(node, []):
+                    dp[node][mask] += dp[neighbor][current_mask]
+    
+    return dp[start][0]
 
 
 def optimize_graph_for_start(graph, start):
