@@ -1,26 +1,31 @@
 #!/usr/bin/python3
 
 '''
---- Day 10: Factory --- (ILP Optimized Version)
+--- Day 11: Reactor ---
+Part 1: Count all paths from "you" to "out"
+Part 2: Count all paths from "svr" to "out" that visit both "dac" and "fft"
 '''
 
 import os
 import sys
 import time
-from colorama import init, Fore
-import re
-import numpy as np
-from scipy.optimize import milp, LinearConstraint, Bounds
+import threading
+from collections import defaultdict, deque
+from colorama import init, Fore, Style
 
 init(autoreset=True)
 
 TEST_SOLUTIONS = {
     "test_I.txt": {
-        "part1": '7',
-        "part2": '33',
+        "part1": 5,
+        "part2": 'N/A',
+    },
+    "test_II.txt": {
+        "part1": 'N/A',
+        "part2": 2,
     },
     "input_I.txt": {
-        "part1": '447', 
+        "part1": 472, 
         "part2": 'N/A',  
     }
 }
@@ -39,6 +44,13 @@ STATUS_COLORS = {
     TEST_STATUS["UNKNOWN"]: Fore.BLUE
 }
 
+# Global variables for progress tracking
+progress_lock = threading.Lock()
+progress_count = 0
+progress_start_time = 0
+progress_active = False
+progress_interval = 0.5
+
 
 def print_header(filename, part):
     """Simple header printing function"""
@@ -49,415 +61,377 @@ def print_header(filename, part):
 
 
 def parse_input(content):
-    """Parse machine configurations from input."""
-    machines_part1 = []
-    machines_part2 = []
+    """Parse the graph from input."""
+    graph = defaultdict(list)
     lines = content.strip().split('\n')
     
     for line in lines:
         if not line.strip():
             continue
             
-        diagram_match = re.search(r'\[([.#]+)\]', line)
-        if not diagram_match:
+        parts = line.split(':')
+        if len(parts) < 2:
             continue
             
-        diagram = diagram_match.group(1)
-        target_lights = [1 if c == '#' else 0 for c in diagram]
+        device = parts[0].strip()
+        outputs = [out.strip() for out in parts[1].strip().split()]
         
-        buttons = re.findall(r'\(([\d,]+)\)', line)
-        button_effects = []
-        
-        for button_str in buttons:
-            effects = list(map(int, button_str.split(',')))
-            button_effects.append(effects)
-        
-        joltage_match = re.search(r'\{(.*?)\}', line)
-        if joltage_match:
-            joltage_str = joltage_match.group(1)
-            joltage_requirements = list(map(int, joltage_str.split(',')))
-        else:
-            joltage_requirements = []
-        
-        machines_part1.append((target_lights, button_effects))
-        machines_part2.append((joltage_requirements, button_effects))
+        for output in outputs:
+            graph[device].append(output)
     
-    return machines_part1, machines_part2
+    return graph
 
 
-def gaussian_elimination_gf2(A, b):
-    """Perform Gaussian elimination over GF(2) to solve Ax = b."""
-    m = len(A)
-    if m == 0:
-        return None
-    n = len(A[0])
-    
-    aug = [row[:] + [b[i]] for i, row in enumerate(A)]
-    
-    row = 0
-    for col in range(n):
-        pivot = -1
-        for i in range(row, m):
-            if aug[i][col] == 1:
-                pivot = i
-                break
-        
-        if pivot == -1:
-            continue
-        
-        aug[row], aug[pivot] = aug[pivot], aug[row]
-        
-        for i in range(m):
-            if i != row and aug[i][col] == 1:
-                for j in range(col, n + 1):
-                    aug[i][j] ^= aug[row][j]
-        
-        row += 1
-        if row >= m:
-            break
-    
-    x = [0] * n
-    
-    for i in range(m):
-        col_with_one = -1
-        for j in range(n):
-            if aug[i][j] == 1:
-                col_with_one = j
-                break
-        
-        if col_with_one == -1:
-            if aug[i][n] == 1:
-                return None
-        else:
-            x[col_with_one] = aug[i][n]
-    
-    return x
-
-
-def find_minimum_presses_part1(machine):
-    """Find minimum total button presses for a single machine (Part 1)."""
-    target_lights, button_effects = machine
-    n_lights = len(target_lights)
-    n_buttons = len(button_effects)
-    
-    A = [[0] * n_buttons for _ in range(n_lights)]
-    for j in range(n_buttons):
-        for light_idx in button_effects[j]:
-            if 0 <= light_idx < n_lights:
-                A[light_idx][j] = 1
-    
-    solution = gaussian_elimination_gf2(A, target_lights)
-    if solution is None:
-        return None
-    
-    aug = [row[:] + [target_lights[i]] for i, row in enumerate(A)]
-    m = n_lights
-    n = n_buttons
-    
-    row = 0
-    pivot_cols = [-1] * m
-    
-    for col in range(n):
-        pivot = -1
-        for i in range(row, m):
-            if aug[i][col] == 1:
-                pivot = i
-                break
-        
-        if pivot == -1:
-            continue
-        
-        aug[row], aug[pivot] = aug[pivot], aug[row]
-        pivot_cols[row] = col
-        
-        for i in range(m):
-            if i != row and aug[i][col] == 1:
-                for j in range(col, n + 1):
-                    aug[i][j] ^= aug[row][j]
-        
-        row += 1
-        if row >= m:
-            break
-    
-    pivot_columns = [c for c in pivot_cols if c != -1]
-    free_vars = [c for c in range(n) if c not in pivot_columns]
-    
-    particular_solution = [0] * n
-    for i in range(m):
-        if pivot_cols[i] != -1:
-            particular_solution[pivot_cols[i]] = aug[i][n]
-    
-    k = len(free_vars)
-    min_presses = sum(particular_solution)
-    
-    if k == 0:
-        return min_presses
-    
-    nullspace_basis = []
-    for free_var in free_vars:
-        null_vec = [0] * n
-        null_vec[free_var] = 1
-        
-        for i in range(m-1, -1, -1):
-            if pivot_cols[i] != -1:
-                col = pivot_cols[i]
-                sum_val = 0
-                for free in free_vars:
-                    sum_val ^= (aug[i][free] & null_vec[free])
-                null_vec[col] = sum_val
-        
-        nullspace_basis.append(null_vec)
-    
-    for mask in range(1 << k):
-        current_solution = particular_solution[:]
-        
-        for i in range(k):
-            if mask & (1 << i):
-                for j in range(n):
-                    current_solution[j] ^= nullspace_basis[i][j]
-        
-        total_presses = sum(current_solution)
-        if total_presses < min_presses:
-            min_presses = total_presses
-    
-    return min_presses
-
-
-def solve_integer_linear_ilp(target_counts, button_effects):
-    """
-    Solve integer linear system using Mixed Integer Linear Programming (MILP).
-    This guarantees the optimal solution.
-    """
-    n_counters = len(target_counts)
-    n_buttons = len(button_effects)
-    
-    if all(t == 0 for t in target_counts):
+def count_paths_dag(graph, start, end):
+    """Count paths in a Directed Acyclic Graph using DP."""
+    if start not in graph:
         return 0
     
-    # Build constraint matrix A
-    A = np.zeros((n_counters, n_buttons), dtype=float)
-    for j in range(n_buttons):
-        for counter_idx in button_effects[j]:
-            if 0 <= counter_idx < n_counters:
-                A[counter_idx, j] = 1.0
+    # First check if graph is acyclic by doing topological sort
+    indegree = defaultdict(int)
+    for node in graph:
+        for neighbor in graph[node]:
+            indegree[neighbor] += 1
     
-    b = np.array(target_counts, dtype=float)
+    # Find all nodes reachable from start
+    visited = set()
+    queue = deque([start])
+    while queue:
+        node = queue.popleft()
+        if node in visited:
+            continue
+        visited.add(node)
+        for neighbor in graph.get(node, []):
+            queue.append(neighbor)
     
-    # Objective: minimize sum of x (we want minimum button presses)
-    c = np.ones(n_buttons)
+    # Only consider nodes reachable from start
+    reachable_nodes = list(visited)
     
-    # Constraints: Ax = b
-    constraints = LinearConstraint(A, lb=b, ub=b)
+    # Try to do topological sort on reachable subgraph
+    topo_order = []
+    zero_indegree = deque([start])
+    local_indegree = defaultdict(int)
     
-    # Bounds: x >= 0 (we can't press buttons negative times)
-    # Also add upper bound based on max target to speed up solver
-    max_target = max(target_counts)
-    upper_bound = max_target * 2  # reasonable upper bound
-    bounds = Bounds(lb=0, ub=upper_bound)
+    # Recalculate indegree for reachable nodes
+    for node in reachable_nodes:
+        for neighbor in graph.get(node, []):
+            if neighbor in visited:
+                local_indegree[neighbor] += 1
     
-    # All variables must be integers
-    integrality = np.ones(n_buttons, dtype=int)
+    while zero_indegree:
+        node = zero_indegree.popleft()
+        topo_order.append(node)
+        for neighbor in graph.get(node, []):
+            if neighbor in visited:
+                local_indegree[neighbor] -= 1
+                if local_indegree[neighbor] == 0:
+                    zero_indegree.append(neighbor)
     
-    try:
-        # Solve the MILP
-        result = milp(c=c, constraints=constraints, bounds=bounds, 
-                     integrality=integrality)
+    # If we couldn't get all nodes, graph has cycles
+    if len(topo_order) != len(reachable_nodes):
+        return None  # Graph has cycles
+    
+    # DP on topological order
+    dp = defaultdict(int)
+    dp[start] = 1
+    
+    for node in topo_order:
+        if dp[node] > 0:
+            for neighbor in graph.get(node, []):
+                if neighbor in visited:
+                    dp[neighbor] += dp[node]
+    
+    return dp.get(end, 0)
+
+
+def count_paths_with_cycles(graph, start, end):
+    """Count all paths in a directed graph that may have cycles."""
+    if start not in graph:
+        return 0
+    
+    # Use DFS with visited tracking to avoid infinite loops
+    count = 0
+    sys.setrecursionlimit(10000)
+    
+    def dfs(node, visited):
+        nonlocal count
         
-        if result.success:
-            x = np.round(result.x).astype(int)
-            # Verify solution
-            computed = A @ x
-            if np.allclose(computed, b):
-                return int(np.sum(x))
-    except Exception as e:
-        # If MILP fails, fall back to greedy
-        pass
-    
-    # Fallback: greedy approach
-    return solve_greedy_fallback(target_counts, button_effects)
-
-
-def solve_greedy_fallback(target_counts, button_effects):
-    """
-    Greedy algorithm as fallback.
-    Strategy: Repeatedly press the button that helps the most with unsatisfied counters.
-    """
-    n_counters = len(target_counts)
-    n_buttons = len(button_effects)
-    
-    remaining = list(target_counts)
-    button_presses = [0] * n_buttons
-    
-    max_iterations = sum(target_counts) * 3
-    iteration = 0
-    
-    while any(r > 0 for r in remaining) and iteration < max_iterations:
-        iteration += 1
+        if node == end:
+            count += 1
+            return
         
-        # Find the counter with largest remaining value
-        max_remaining = max(remaining)
-        if max_remaining == 0:
-            break
+        if node in visited:
+            return
         
-        # Find button that best helps with current state
-        best_button = -1
-        best_score = -1
+        visited.add(node)
         
-        for j in range(n_buttons):
-            # Calculate score: how much this button helps
-            score = 0
-            for counter_idx in button_effects[j]:
-                if 0 <= counter_idx < n_counters and remaining[counter_idx] > 0:
-                    score += min(remaining[counter_idx], 1)
-            
-            # Prefer buttons that help multiple counters
-            if score > best_score:
-                best_score = score
-                best_button = j
+        for neighbor in graph.get(node, []):
+            dfs(neighbor, visited)
         
-        if best_button == -1 or best_score == 0:
-            # No button helps - might be impossible
-            return None
+        visited.remove(node)
+    
+    dfs(start, set())
+    return count
+
+
+def count_paths_with_cycles_iterative(graph, start, end):
+    """Count all paths in a directed graph using iterative DFS."""
+    if start not in graph:
+        return 0
+    
+    count = 0
+    stack = [(start, set([start]))]
+    
+    while stack:
+        node, visited = stack.pop()
         
-        # Press the best button
-        button_presses[best_button] += 1
-        for counter_idx in button_effects[best_button]:
-            if 0 <= counter_idx < n_counters:
-                remaining[counter_idx] = max(0, remaining[counter_idx] - 1)
+        if node == end:
+            count += 1
+            continue
+        
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                new_visited = visited.copy()
+                new_visited.add(neighbor)
+                stack.append((neighbor, new_visited))
     
-    # Check if we found a valid solution
-    if any(r > 0 for r in remaining):
-        return None
+    return count
+
+
+def count_paths_with_required(graph, start, end, required):
+    """Count paths that visit all required nodes - ULTRA OPTIMIZED VERSION."""
+    if start not in graph:
+        return 0
     
-    return sum(button_presses)
-
-
-def find_minimum_presses_part2(machine):
-    """Find minimum total button presses for a single machine (Part 2)."""
-    target_counts, button_effects = machine
-    return solve_integer_linear_ilp(target_counts, button_effects)
-
-
-def solve_part1(machines):
-    """Solve Part 1: Find minimum total presses for all machines."""
-    total_presses = 0
+    if not required:
+        result = count_paths_dag(graph, start, end)
+        if result is not None:
+            return result
+        return count_paths_with_cycles_iterative(graph, start, end)
     
-    for i, machine in enumerate(machines):
-        presses = find_minimum_presses_part1(machine)
-        if presses is None:
-            print(f"{Fore.RED}Machine {i} has no solution!")
-        else:
-            total_presses += presses
+    # Map required nodes to bit positions
+    node_to_bit = {node: i for i, node in enumerate(sorted(required))}
+    all_required_mask = (1 << len(required)) - 1
     
-    return total_presses
-
-
-def solve_part2(machines):
-    """Solve Part 2: Find minimum total presses for all machines."""
-    total_presses = 0
-    total_machines = len(machines)
+    # Pre-compute which required nodes are reachable from each node (one-time cost)
+    print(f"{Fore.CYAN}Pre-computing reachability for pruning...")
+    reachable_required = {}
+    all_nodes = set(graph.keys())
+    for neighbor_list in graph.values():
+        all_nodes.update(neighbor_list)
+    
+    for node in all_nodes:
+        mask = 0
+        visited = {node}
+        queue = deque([node])
+        while queue:
+            curr = queue.popleft()
+            if curr in node_to_bit:
+                mask |= (1 << node_to_bit[curr])
+            for neighbor in graph.get(curr, []):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+        reachable_required[node] = mask
+    
+    print(f"{Fore.CYAN}Starting optimized path search...")
+    
+    count = 0
+    visited = set()
+    total_iterations = 0
+    last_print = time.time()
+    
+    def dfs_backtrack(node, mask):
+        nonlocal count, total_iterations, last_print
+        
+        total_iterations += 1
+        
+        # Update progress every 1M iterations
+        if total_iterations % 1000000 == 0:
+            current_time = time.time()
+            if current_time - last_print > 2.0:
+                rate = total_iterations / (current_time - time.time() + 0.001)
+                print(f"\r{Fore.CYAN}[{Fore.YELLOW}{total_iterations:,}{Fore.CYAN}] Iterations | "
+                      f"{Fore.GREEN}{count:,}{Fore.CYAN} paths | "
+                      f"{Fore.MAGENTA}{rate:,.0f}{Fore.CYAN} iter/s", end="", flush=True)
+                last_print = current_time
+        
+        # Update mask if current node is required
+        current_mask = mask
+        if node in node_to_bit:
+            current_mask = mask | (1 << node_to_bit[node])
+        
+        # Reached the end
+        if node == end:
+            if current_mask == all_required_mask:
+                count += 1
+            return
+        
+        # CRITICAL PRUNING: check if we can reach all missing required nodes
+        needed_mask = all_required_mask ^ current_mask
+        if needed_mask != 0:
+            can_reach = reachable_required.get(node, 0)
+            if (can_reach & needed_mask) != needed_mask:
+                return  # Cannot reach all required nodes from here
+        
+        # Explore neighbors with backtracking
+        visited.add(node)
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                dfs_backtrack(neighbor, current_mask)
+        visited.remove(node)
+    
     start_time = time.time()
+    dfs_backtrack(start, 0)
     
-    print(f"{Fore.CYAN}Processing {total_machines} machines...")
+    print("\r" + " " * 100 + "\r", end="", flush=True)
+    return count
+
+
+def optimize_graph_for_start(graph, start):
+    """Remove nodes not reachable from start and their edges."""
+    if start not in graph:
+        return graph
     
-    for i, machine in enumerate(machines):
-        elapsed = time.time() - start_time
-        progress_pct = (i + 1) / total_machines * 100
-        
-        if i > 0:
-            avg_time = elapsed / (i + 1)
-            remaining = total_machines - (i + 1)
-            eta_seconds = avg_time * remaining
-            
-            if eta_seconds < 60:
-                eta_str = f"{eta_seconds:.0f}s"
-            elif eta_seconds < 3600:
-                minutes = int(eta_seconds // 60)
-                seconds = int(eta_seconds % 60)
-                eta_str = f"{minutes}m{seconds}s"
-            else:
-                hours = int(eta_seconds // 3600)
-                minutes = int((eta_seconds % 3600) // 60)
-                eta_str = f"{hours}h{minutes}m"
-        else:
-            eta_str = "calculating..."
-        
-        sys.stdout.write(f"\r{Fore.YELLOW}[{int(progress_pct):3d}%] "
-                       f"Machine {i+1:3d}/{total_machines} | "
-                       f"ETA: {eta_str:>8} | "
-                       f"Total: {total_presses:6d}")
-        sys.stdout.flush()
-        
-        presses = find_minimum_presses_part2(machine)
-        
-        if presses is None:
-            print(f"\n{Fore.RED}Machine {i} has no solution!")
-        else:
-            total_presses += presses
+    # Find all nodes reachable from start
+    visited = set()
+    stack = [start]
     
-    sys.stdout.write("\r" + " " * 100 + "\r")
+    while stack:
+        node = stack.pop()
+        if node in visited:
+            continue
+        visited.add(node)
+        for neighbor in graph.get(node, []):
+            stack.append(neighbor)
     
-    elapsed = time.time() - start_time
-    print(f"{Fore.GREEN}✓ Processed {total_machines} machines in {elapsed:.2f}s")
+    # Create new graph with only reachable nodes
+    new_graph = defaultdict(list)
+    for node in visited:
+        if node in graph:
+            for neighbor in graph[node]:
+                if neighbor in visited:
+                    new_graph[node].append(neighbor)
     
-    return total_presses
+    return new_graph
 
 
 def part1(content):
-    """Solution for Part 1: Find minimum total button presses for lights."""
+    """Solution for Part 1: Count all paths from 'you' to 'out'."""
     start_time = time.time()
     
-    print(f"{Fore.YELLOW}Part 1: Finding minimum button presses for indicator lights...")
+    print(f"{Fore.YELLOW}Part 1: Counting all paths from 'you' to 'out'...")
     
-    machines_part1, _ = parse_input(content)
-    n_machines = len(machines_part1)
+    graph = parse_input(content)
     
-    print(f"{Fore.YELLOW}Number of machines: {n_machines}")
+    # Check if we have the required nodes
+    if 'you' not in graph:
+        print(f"{Fore.RED}Error: Starting node 'you' not found in graph!")
+        return {
+            "value": 0,
+            "execution_time": time.time() - start_time,
+            "status": TEST_STATUS["FAILED"]
+        }
     
-    result = solve_part1(machines_part1)
+    # Optimize graph
+    optimized_graph = optimize_graph_for_start(graph, 'you')
+    print(f"{Fore.YELLOW}Original graph: {len(graph)} nodes")
+    print(f"{Fore.YELLOW}Optimized graph: {len(optimized_graph)} reachable nodes from 'you'")
+    
+    # Try DAG algorithm first
+    print(f"{Fore.CYAN}Trying DAG algorithm...")
+    result = count_paths_dag(optimized_graph, 'you', 'out')
+    
+    if result is None:
+        print(f"{Fore.YELLOW}Graph has cycles, using iterative DFS...")
+        result = count_paths_with_cycles_iterative(optimized_graph, 'you', 'out')
     
     elapsed = time.time() - start_time
+    
     print(f"\n{Fore.CYAN}{'-'*60}")
-    print(f"{Fore.CYAN}Factory Machines Summary (Part 1):")
+    print(f"{Fore.CYAN}Part 1 Summary:")
     print(f"{Fore.CYAN}{'-'*60}")
-    print(f"{Fore.GREEN}Total minimum button presses: {result}")
-    print(f"{Fore.CYAN}Time: {elapsed:.3f}s ({elapsed/n_machines:.3f}s per machine)")
+    print(f"{Fore.GREEN}Total paths from 'you' to 'out': {result:,}")
+    print(f"{Fore.CYAN}Total time: {elapsed:.3f}s")
     print(f"{Fore.CYAN}{'-'*60}")
     
     return {
         "value": result,
         "execution_time": elapsed,
-        "problems_count": n_machines,
-        "results": [{"total_presses": result}]
+        "graph_size": len(graph),
+        "optimized_size": len(optimized_graph)
     }
 
 
 def part2(content):
-    """Solution for Part 2: Find minimum total button presses for joltage counters."""
+    """Solution for Part 2: Count all paths from 'svr' to 'out' that visit both 'dac' and 'fft'."""
     start_time = time.time()
     
-    print(f"{Fore.YELLOW}Part 2: Finding minimum button presses for joltage counters...")
+    print(f"{Fore.YELLOW}Part 2: Counting paths from 'svr' to 'out' visiting both 'dac' and 'fft'...")
     
-    _, machines_part2 = parse_input(content)
-    n_machines = len(machines_part2)
+    graph = parse_input(content)
     
-    print(f"{Fore.YELLOW}Number of machines: {n_machines}")
+    # Check if we have the required nodes
+    required_nodes = {'dac', 'fft'}
     
-    result = solve_part2(machines_part2)
+    # First, optimize graph to only include nodes reachable from 'svr'
+    if 'svr' not in graph:
+        print(f"{Fore.RED}Error: Starting node 'svr' not found in graph!")
+        return {
+            "value": 0,
+            "execution_time": time.time() - start_time,
+            "status": TEST_STATUS["FAILED"]
+        }
+    
+    optimized_graph = optimize_graph_for_start(graph, 'svr')
+    print(f"{Fore.YELLOW}Original graph: {len(graph)} nodes")
+    print(f"{Fore.YELLOW}Optimized graph: {len(optimized_graph)} reachable nodes from 'svr'")
+    print(f"{Fore.YELLOW}Required nodes: {required_nodes}")
+    
+    # Check if required nodes are in optimized graph
+    missing_required = []
+    for node in required_nodes:
+        if node not in optimized_graph and node != 'out':
+            # Check if node might be reachable (as a leaf)
+            found = False
+            for src in optimized_graph:
+                if node in optimized_graph[src]:
+                    found = True
+                    break
+            if not found and node != 'out':
+                missing_required.append(node)
+    
+    if missing_required:
+        print(f"{Fore.YELLOW}Warning: Some required nodes not reachable from 'svr': {missing_required}")
+        return {
+            "value": 0,
+            "execution_time": time.time() - start_time,
+            "status": TEST_STATUS["FAILED"]
+        }
+    
+    print(f"{Fore.CYAN}Starting path counting with iterative DFS and bitmask tracking...")
+    print(f"{Fore.CYAN}This may take a while for large graphs...")
+    
+    result = count_paths_with_required(optimized_graph, 'svr', 'out', required_nodes)
     
     elapsed = time.time() - start_time
+    
     print(f"\n{Fore.CYAN}{'-'*60}")
     print(f"{Fore.CYAN}Part 2 Summary:")
     print(f"{Fore.CYAN}{'-'*60}")
-    print(f"{Fore.GREEN}Total minimum button presses: {result}")
-    print(f"{Fore.CYAN}Time: {elapsed:.3f}s ({elapsed/n_machines:.3f}s per machine)")
+    print(f"{Fore.GREEN}Paths from 'svr' to 'out' visiting both 'dac' and 'fft': {result:,}")
+    print(f"{Fore.CYAN}Total time: {elapsed:.1f}s")
+    
+    if elapsed > 0:
+        print(f"{Fore.CYAN}Processing rate: {result/elapsed:,.0f} paths counted/second")
+    
     print(f"{Fore.CYAN}{'-'*60}")
     
     return {
         "value": result,
         "execution_time": elapsed,
-        "problems_count": n_machines,
-        "results": [{"total_presses": result}]
+        "graph_size": len(graph),
+        "optimized_size": len(optimized_graph)
     }
 
 
@@ -479,10 +453,6 @@ def determine_test_status(result, expected, filename, part_name):
             print(f"{Fore.RED}✗ TEST FAILED for {filename} {part_name}")
             print(f"{Fore.RED}  Expected: {expected_value}")
             print(f"{Fore.RED}  Got: {result_value}")
-            
-            if "problems_count" in result:
-                print(f"{Fore.RED}  Problems count: {result['problems_count']}")
-            
             return TEST_STATUS["FAILED"]
     except ValueError:
         return TEST_STATUS["UNKNOWN"]
