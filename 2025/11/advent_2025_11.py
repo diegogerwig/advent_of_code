@@ -92,15 +92,15 @@ init(autoreset=True)
 TEST_SOLUTIONS = {
     "test_I.txt": {
         "part1": 5,
-        "part2": 'N/A',
+        "part2": None,  
     },
     "test_II.txt": {
-        "part1": 'N/A',
+        "part1": None,  
         "part2": 2,
     },
     "input_I.txt": {
         "part1": 472, 
-        "part2": 'N/A',  
+        "part2": 526811953334940,  
     }
 }
 
@@ -108,6 +108,7 @@ TEST_STATUS = {
     "PASSED": "PASSED",
     "FAILED": "FAILED", 
     "IN_PROGRESS": "IN_PROGRESS",
+    "NOT_APPLICABLE": "NOT_APPLICABLE",  
     "UNKNOWN": "UNKNOWN"
 }
 
@@ -115,6 +116,7 @@ STATUS_COLORS = {
     TEST_STATUS["PASSED"]: Fore.GREEN,
     TEST_STATUS["FAILED"]: Fore.RED,
     TEST_STATUS["IN_PROGRESS"]: Fore.YELLOW,
+    TEST_STATUS["NOT_APPLICABLE"]: Fore.LIGHTBLACK_EX,  
     TEST_STATUS["UNKNOWN"]: Fore.BLUE
 }
 
@@ -562,6 +564,9 @@ def part2(content):
 
 def determine_test_status(result, expected, filename, part_name):
     """Determine the test status based on the result and expected value."""
+    if expected is None:
+        return TEST_STATUS["NOT_APPLICABLE"]
+    
     if expected == 'N/A':
         return TEST_STATUS["IN_PROGRESS"]
     
